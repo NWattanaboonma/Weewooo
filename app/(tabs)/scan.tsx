@@ -11,8 +11,8 @@ import {
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/IconSymbol";
-// IMPORT THE NEW WEB SCANNER COMPONENT (Ensure the path is correct)
-import { WebBarcodeScanner } from "@/components/WebBarcodeScanner";
+// Import the code scanner component
+import { CodeScanner } from "@/components/CodeScanner";
 
 const QUICK_TEST_SCANS = [
   "MED001",
@@ -56,7 +56,7 @@ export default function ScanScreen() {
     if (Platform.OS === "web") {
       // IMPORTANT: The web component handles its own permissions and loading.
       // We only render it and pass the success handler.
-      return <WebBarcodeScanner onScanSuccess={handleBarcodeScan} />;
+      return <CodeScanner onDetected={handleBarcodeScan} hasScanned={scanned} />;
     }
 
     // --- MOBILE (Android/iOS) LOGIC ---
