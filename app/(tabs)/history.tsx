@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { Header } from '@/components/Header';
+import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
 export default function HistoryScreen() {
@@ -8,14 +9,15 @@ export default function HistoryScreen() {
   const [sortBy, setSortBy] = useState('Date'); // 'Date', 'Item Name', 'Case ID', etc.
   const [filterAction, setFilterAction] = useState('All'); // 'All', 'Check In', 'Check Out'
   const [filterCategory, setFilterCategory] = useState('All'); // 'All', 'Medication', 'Equipment', 'Supplies'
+  const router = useRouter();
 
   // Placeholder for actual history data
   // Data in the histroy 
   const dummyHistory = [
-    { id: '1', itemName: 'Anphetamines', date: '2023-10-26 10:30 AM', caseId: 'C12345', user: 'John Doe', quantity: 5, action: 'Check Out', category: 'Medication' },
-    { id: '2', itemName: 'Defibrillator', date: '2023-10-26 09:15 AM', caseId: 'C12344', user: 'Jane Smith', quantity: 1, action: 'Check In', category: 'Equipment' },
-    { id: '3', itemName: 'Bandages', date: '2023-10-25 04:00 PM', caseId: 'C12343', user: 'John Doe', quantity: 10, action: 'Check Out', category: 'Supplies' },
-    { id: '4', itemName: 'Morphine', date: '2023-10-25 02:00 PM', caseId: 'C12342', user: 'Jane Smith', quantity: 2, action: 'Check In', category: 'Medication' },
+    { id: 'MED001', itemName: 'Epinephrine Auto-Injector', date: '2023-10-26 10:30 AM', caseId: 'C12345', user: 'John Doe', quantity: 5, action: 'Check Out', category: 'Medication' },
+    { id: 'EQP001', itemName: 'Defibrillator AED', date: '2023-10-26 09:15 AM', caseId: 'C12344', user: 'Jane Smith', quantity: 1, action: 'Check In', category: 'Equipment' },
+    { id: 'SUP001', itemName: 'Gauze Pads 4x4', date: '2023-10-25 04:00 PM', caseId: 'C12343', user: 'John Doe', quantity: 10, action: 'Check Out', category: 'Supplies' },
+    { id: 'MED002', itemName: 'Morphine 10mg', date: '2023-10-25 02:00 PM', caseId: 'C12342', user: 'Jane Smith', quantity: 2, action: 'Check In', category: 'Medication' },
   ];
 
   // Simple filtering and sorting logic for demonstration
@@ -97,7 +99,11 @@ export default function HistoryScreen() {
             </View>
           ) : (
             filteredAndSortedHistory.map((item) => (
-              <View key={item.id} style={styles.historyItemCard}>
+              <TouchableOpacity
+                key={item.id}
+                style={styles.historyItemCard}
+                onPress={() => router.push(`/item-details?id=${item.id}`)}
+              >
                 <View style={styles.itemHeader}>
                   <Text style={styles.itemName}>{item.itemName}</Text>
                   <Text style={styles.itemQuantity}>{item.action === 'Check In' ? '+' : '-'}{item.quantity}</Text>
@@ -107,7 +113,7 @@ export default function HistoryScreen() {
                   <Text style={styles.itemDetailText}>Case ID: {item.caseId}</Text>
                   <Text style={styles.itemDetailText}>User: {item.user}</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))
           )}
         </ScrollView>
