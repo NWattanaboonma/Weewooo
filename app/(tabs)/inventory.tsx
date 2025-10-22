@@ -5,86 +5,168 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { Header } from '@/components/Header';
 import { useInventory, ItemCategory } from '@/contexts/InventoryContext';
 
-const CATEGORIES: Array<'All' | ItemCategory> = ['All', 'Medication', 'Equipment', 'Supplies'];
+const CATEGORIES: Array<'All Categories' | ItemCategory> = ['All Categories', 'Medication', 'Equipment', 'Supplies'];
 
 export default function InventoryScreen() {
   const { items } = useInventory();
-  const [selectedCategory, setSelectedCategory] = useState<'All' | ItemCategory>('All');
+  const [selectedCategory, setSelectedCategory] = useState<'All Categories' | ItemCategory>('All Categories');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
-  const filteredItems =
-    selectedCategory === 'All'
-      ? items
-      : items.filter((item) => item.category === selectedCategory);
+  const filteredItems = items
+    .filter((item) => 
+      selectedCategory === 'All Categories' || item.category === selectedCategory
+    )
+    .filter((item) =>
+      searchQuery === '' ||
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.id.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+  const handleCategorySelect = (category: 'All Categories' | ItemCategory) => {
+    setSelectedCategory(category);
+    setShowCategoryDropdown(false);
+  };
 
   return (
     <View style={styles.container}>
       <Header />
       <View style={styles.content}>
-        <Text style={styles.title}>Full Inventory</Text>
+        <Text style={styles.title}>Inventory</Text>
         
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterContainer}
-          contentContainerStyle={styles.filterContent}>
-          {CATEGORIES.map((category) => (
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by name or code..."
+            placeholderTextColor="#9CA3AF"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searchQuery !== '' && (
             <TouchableOpacity
-              key={category}
-              style={[
-                styles.filterButton,
-                selectedCategory === category && styles.filterButtonActive,
-              ]}
-              onPress={() => setSelectedCategory(category)}>
-              <Text
-                style={[
-                  styles.filterText,
-                  selectedCategory === category && styles.filterTextActive,
-                ]}>
-                {category}
-              </Text>
+              style={styles.clearButton}
+              onPress={() => setSearchQuery('')}>
+              <Text style={styles.clearButtonText}>✕</Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+          )}
+        </View>
+
+        {/* Filters Toggle */}
+        <TouchableOpacity
+          style={styles.filtersToggle}
+          onPress={() => setShowFilters(!showFilters)}>
+          <Text style={styles.filtersIcon}>⚙</Text>
+          <Text style={styles.filtersText}>Filters</Text>
+          <Text style={styles.chevron}>{showFilters ? '▲' : '▼'}</Text>
+        </TouchableOpacity>
+
+        {/* Filter Dropdowns */}
+        {showFilters && (
+          <View style={styles.filtersContainer}>
+            {/* Category Dropdown */}
+            <View style={styles.dropdownContainer}>
+              <TouchableOpacity 
+                style={styles.dropdown}
+                onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}>
+                <Text style={styles.dropdownText}>{selectedCategory}</Text>
+                <Text style={styles.dropdownChevron}>▼</Text>
+              </TouchableOpacity>
+              
+              {showCategoryDropdown && (
+                <View style={styles.dropdownMenu}>
+                  {CATEGORIES.map((category) => (
+                    <TouchableOpacity
+                      key={category}
+                      style={[
+                        styles.dropdownItem,
+                        selectedCategory === category && styles.dropdownItemSelected,
+                      ]}
+                      onPress={() => handleCategorySelect(category)}>
+                      <Text
+                        style={[
+                          styles.dropdownItemText,
+                          selectedCategory === category && styles.dropdownItemTextSelected,
+                        ]}>
+                        {category}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* Location Dropdown (Placeholder) */}
+            <View style={styles.dropdownContainer}>
+              <TouchableOpacity style={styles.dropdown}>
+                <Text style={styles.dropdownText}>All Locations</Text>
+                <Text style={styles.dropdownChevron}>▼</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Expiring Soon Dropdown (Placeholder) */}
+            <View style={styles.dropdownContainer}>
+              <TouchableOpacity style={styles.dropdown}>
+                <Text style={styles.dropdownText}>Expiring Soon</Text>
+                <Text style={styles.dropdownChevron}>▼</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         <ScrollView
           style={styles.itemList}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.itemListContent}>
-          {filteredItems.map((item) => (
-            <View key={item.id} style={styles.itemCard}>
-              <View style={styles.itemHeader}>
-                <View style={styles.itemTitleContainer}>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemMeta}>
-                    {item.id} • {item.category}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    item.status === 'In Stock' && styles.statusInStock,
-                    item.status === 'Low Stock' && styles.statusLowStock,
-                  ]}>
-                  <Text style={styles.statusText}>{item.status}</Text>
-                </View>
-              </View>
-
-              <View style={styles.itemDetails}>
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>Quantity</Text>
-                  <Text style={styles.detailValue}>{item.quantity} units</Text>
-                </View>
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>Last Scanned</Text>
-                  <Text style={styles.detailValue}>{item.lastScanned}</Text>
-                </View>
-              </View>
+          {filteredItems.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No items found</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Try adjusting your search or filters
+              </Text>
             </View>
-          ))}
+          ) : (
+            filteredItems.map((item) => (
+              <View key={item.id} style={styles.itemCard}>
+                <View style={styles.itemHeader}>
+                  <View style={styles.itemTitleContainer}>
+                    <Text style={styles.itemName}>{item.name}</Text>
+                    <Text style={styles.itemMeta}>
+                      {item.id} • {item.category}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      item.status === 'In Stock' && styles.statusInStock,
+                      item.status === 'Low Stock' && styles.statusLowStock,
+                    ]}>
+                    <Text style={styles.statusText}>{item.status}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.itemDetails}>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Quantity</Text>
+                    <Text style={styles.detailValue}>{item.quantity} units</Text>
+                  </View>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Last Scanned</Text>
+                    <Text style={styles.detailValue}>{item.lastScanned}</Text>
+                  </View>
+                </View>
+              </View>
+            ))
+          )}
         </ScrollView>
       </View>
     </View>
@@ -101,35 +183,115 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#000000',
     paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  searchContainer: {
+    marginHorizontal: 20,
     marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 12,
   },
-  filterContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 16,
+  searchIcon: {
+    fontSize: 18,
+    marginRight: 8,
+    color: '#9CA3AF',
   },
-  filterContent: {
-    gap: 8,
-  },
-  filterButton: {
-    backgroundColor: '#E0E7FF',
-    borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  filterButtonActive: {
-    backgroundColor: '#4F7FFF',
-  },
-  filterText: {
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
     fontSize: 15,
+    color: '#1F2937',
+  },
+  clearButton: {
+    padding: 8,
+  },
+  clearButtonText: {
+    fontSize: 18,
+    color: '#9CA3AF',
+    fontWeight: '600',
+  },
+  filtersToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  filtersIcon: {
+    fontSize: 16,
+    color: '#4F7FFF',
+    marginRight: 8,
+  },
+  filtersText: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#4F7FFF',
+    flex: 1,
   },
-  filterTextActive: {
+  chevron: {
+    fontSize: 12,
+    color: '#4F7FFF',
+  },
+  filtersContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  dropdownContainer: {
+    marginBottom: 12,
+  },
+  dropdown: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dropdownText: {
+    fontSize: 15,
+    color: '#1F2937',
+    fontWeight: '500',
+  },
+  dropdownChevron: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  dropdownMenu: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  dropdownItemSelected: {
+    backgroundColor: '#6B7280',
+  },
+  dropdownItemText: {
+    fontSize: 15,
+    color: '#1F2937',
+  },
+  dropdownItemTextSelected: {
     color: '#FFFFFF',
+    fontWeight: '500',
   },
   itemList: {
     flex: 1,
@@ -137,6 +299,21 @@ const styles = StyleSheet.create({
   },
   itemListContent: {
     paddingBottom: 100,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
   },
   itemCard: {
     backgroundColor: '#FFFFFF',
