@@ -3,25 +3,18 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 
 import { Header } from '@/components/Header';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useInventory } from '@/contexts/InventoryContext'; // Import useInventory hook
 
 export default function HistoryScreen() {
+  const { history } = useInventory(); // Get history from the context
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('Date'); // 'Date', 'Item Name', 'Case ID', etc.
   const [filterAction, setFilterAction] = useState('All'); // 'All', 'Check In', 'Check Out'
   const [filterCategory, setFilterCategory] = useState('All'); // 'All', 'Medication', 'Equipment', 'Supplies'
   const router = useRouter();
 
-  // Placeholder for actual history data
-  // Data in the histroy 
-  const dummyHistory = [
-    { id: 'MED001', itemName: 'Epinephrine Auto-Injector', date: '2023-10-26 10:30 AM', caseId: 'C12345', user: 'John Doe', quantity: 5, action: 'Check Out', category: 'Medication' },
-    { id: 'EQP001', itemName: 'Defibrillator AED', date: '2023-10-26 09:15 AM', caseId: 'C12344', user: 'Jane Smith', quantity: 1, action: 'Check In', category: 'Equipment' },
-    { id: 'SUP001', itemName: 'Gauze Pads 4x4', date: '2023-10-25 04:00 PM', caseId: 'C12343', user: 'John Doe', quantity: 10, action: 'Check Out', category: 'Supplies' },
-    { id: 'MED002', itemName: 'Morphine 10mg', date: '2023-10-25 02:00 PM', caseId: 'C12342', user: 'Jane Smith', quantity: 2, action: 'Check In', category: 'Medication' },
-  ];
-
   // Simple filtering and sorting logic for demonstration
-  const filteredAndSortedHistory = dummyHistory
+  const filteredAndSortedHistory = history // Use history from context
     .filter(item => {
       const matchesSearch = searchQuery === '' ||
         item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -102,7 +95,7 @@ export default function HistoryScreen() {
               <TouchableOpacity
                 key={item.id}
                 style={styles.historyItemCard}
-                onPress={() => router.push(`/item-details?id=${item.id}`)}
+                onPress={() => router.push(`/item-details?id=${item.itemId}&historyId=${item.id}`)}
               >
                 <View style={styles.itemHeader}>
                   <Text style={styles.itemName}>{item.itemName}</Text>
@@ -110,8 +103,8 @@ export default function HistoryScreen() {
                 </View>
                 <View style={styles.itemDetails}>
                   <Text style={styles.itemDetailText}>Date: {item.date}</Text>
-                  <Text style={styles.itemDetailText}>Case ID: {item.caseId}</Text>
-                  <Text style={styles.itemDetailText}>User: {item.user}</Text>
+                  <Text style={styles.itemDetailText}>Case ID: {item.caseId} • Item ID: {item.itemId}</Text>
+                  <Text style={styles.itemDetailText}>Action: {item.action}</Text>
                 </View>
               </TouchableOpacity>
             ))

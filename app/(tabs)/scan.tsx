@@ -11,14 +11,15 @@ import {
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+import { useInventory } from '@/contexts/InventoryContext'; // Import useInventory hook
 // Import the code scanner component
 import { CodeScanner } from "@/components/CodeScanner";
 
 const QUICK_TEST_SCANS = [
   "MED001",
   "EQP001",
+  "MED002", // Added MED002 to quick scans for testing
   "SUP001",
-  "MED002",
   "EQP002",
   "SUP002",
 ];
@@ -26,6 +27,7 @@ const QUICK_TEST_SCANS = [
 export default function ScanScreen() {
   const [barcode, setBarcode] = useState("");
   const [scanned, setScanned] = useState(false);
+  const { logInventoryAction } = useInventory(); // Get logInventoryAction from context
   const [permission, requestPermission] = useCameraPermissions();
 
   // NOTE: Removed the useEffect dependency array to prevent rapid re-runs during navigation.
@@ -42,7 +44,10 @@ export default function ScanScreen() {
 
   const handleSubmit = () => {
     if (barcode.trim()) {
-      alert(`Scanned: ${barcode}`);
+      // For demonstration, we'll log a "Check In" of 1 unit.
+      // In a real application, you would have UI to select the action (Check In/Out) and quantity.
+      logInventoryAction(barcode.trim(), 'Check In', 1);
+      alert(`Logged action for item: ${barcode.trim()} (Check In, Quantity 1)`);
       setBarcode("");
     }
   };

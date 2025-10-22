@@ -4,11 +4,14 @@ import { useLocalSearchParams, Stack } from 'expo-router';
 import { useInventory } from '@/contexts/InventoryContext';
 
 export default function ItemDetailsScreen() {
-  const { id } = useLocalSearchParams();
-  const { items } = useInventory();
+  const { id, historyId } = useLocalSearchParams();
+  const { items, history } = useInventory();
 
   // Find the item based on the ID from the URL params
   const item = items.find(i => i.id === id);
+
+  // Find the specific history record if a historyId is provided
+  const historyItem = history.find(h => h.id === historyId);
 
   if (!item) {
     return (
@@ -47,7 +50,7 @@ export default function ItemDetailsScreen() {
         <View style={styles.detailsGrid}>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Quantity</Text>
-            <Text style={styles.detailValue}>{item.quantity}</Text>
+            <Text style={styles.detailValue}>{historyItem ? historyItem.quantity : item.quantity}</Text>
           </View>
           <View style={[styles.detailRow, styles.detailRowBorder]}>
             <Text style={styles.detailLabel}>Expiry Date</Text>

@@ -1,6 +1,19 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react';
 
 export type ItemCategory = 'Medication' | 'Equipment' | 'Supplies';
+export type HistoryAction = 'Check In' | 'Use' | 'Transfer' | 'Remove All' | 'Check Out';
+
+export interface HistoryItem {
+  id: string;
+  itemId: string;
+  itemName: string;
+  date: string;
+  caseId: string;
+  user: string;
+  quantity: number;
+  action: HistoryAction;
+  category: ItemCategory;
+}
 
 export interface InventoryItem {
   id: string;
@@ -13,11 +26,13 @@ export interface InventoryItem {
 
 interface InventoryContextType {
   items: InventoryItem[];
+  history: HistoryItem[]; // Add history to context type
   checkedIn: number;
   checkedOut: number;
   lowStockCount: number;
   addItem: (item: InventoryItem) => void;
   updateItem: (id: string, updates: Partial<InventoryItem>) => void;
+  logInventoryAction: (itemId: string, action: HistoryAction, quantity: number) => void; // New function to log actions
 }
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
@@ -81,12 +96,31 @@ const mockData: InventoryItem[] = [
   },
 ];
 
+// Initial dummy history data
+const dummyHistory: HistoryItem[] = [
+  { id: '1', itemId: 'MED001', itemName: 'Epinephrine Auto-Injector', date: '2023-10-26 10:30 AM', caseId: 'C12345', user: 'John Doe', quantity: 5, action: 'Check Out', category: 'Medication' },
+  { id: '2', itemId: 'EQP001', itemName: 'Defibrillator AED', date: '2023-10-26 09:15 AM', caseId: 'C12344', user: 'Jane Smith', quantity: 1, action: 'Check In', category: 'Equipment' },
+  { id: '3', itemId: 'SUP001', itemName: 'Gauze Pads 4x4', date: '2023-10-25 04:00 PM', caseId: 'C12343', user: 'John Doe', quantity: 10, action: 'Check Out', category: 'Supplies' },
+  { id: '4', itemId: 'MED002', itemName: 'Morphine 10mg', date: '2023-10-25 02:00 PM', caseId: 'C12342', user: 'Jane Smith', quantity: 2, action: 'Check In', category: 'Medication' },
+];
+
 export function InventoryProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<InventoryItem[]>(mockData);
-  const [checkedIn] = useState(7);
-  const [checkedOut] = useState(2);
+  const [history, setHistory] = useState<HistoryItem[]>(dummyHistory); // New state for history
 
   const lowStockCount = items.filter(item => item.status === 'Low Stock').length;
+
+  // Derive checkedIn and checkedOut from history using useMemo for performance
+  const { checkedIn, checkedOut } = useMemo(() => {
+    return history.reduce((acc, record) => {
+      if (record.action === 'Check In') {
+        acc.checkedIn += record.quantity;
+      } else { // Any other action is a form of check-out
+        acc.checkedOut += record.quantity;
+      }
+      return acc;
+    }, { checkedIn: 0, checkedOut: 0 });
+  }, [history]);
 
   const addItem = (item: InventoryItem) => {
     setItems([...items, item]);
@@ -96,15 +130,51 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
     setItems(items.map(item => (item.id === id ? { ...item, ...updates } : item)));
   };
 
+  // New function to log inventory actions and update item quantity
+  const logInventoryAction = (itemId: string, action: HistoryAction, quantity: number) => {
+    const itemToUpdate = items.find(item => item.id === itemId);
+    if (!itemToUpdate) {
+      console.warn(`Item with ID ${itemId} not found for logging action.`);
+      return;
+    }
+
+    // 1. Create a new history record
+    const newHistoryItem: HistoryItem = {
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, // Generate a unique ID
+      itemId: itemToUpdate.id,
+      itemName: itemToUpdate.name,
+      date: new Date().toLocaleString(), // Current date and time
+      caseId: `C${Math.floor(Math.random() * 90000) + 10000}`, // Dummy case ID
+      user: 'Current User', // Placeholder for actual user
+      quantity,
+      action,
+      category: itemToUpdate.category,
+    };
+    setHistory(prevHistory => [newHistoryItem, ...prevHistory]); // Add new record to the beginning
+
+    // 2. Update the item's quantity and status
+    const currentQuantity = itemToUpdate.quantity;
+    let updatedQuantity = action === 'Check In' ? currentQuantity + quantity : currentQuantity - quantity; // All non-'Check In' actions reduce quantity
+    updatedQuantity = Math.max(0, updatedQuantity); // Ensure quantity doesn't go below zero
+
+    let newStatus: 'In Stock' | 'Low Stock' | 'Out of Stock' = 'In Stock';
+    if (updatedQuantity <= 0) newStatus = 'Out of Stock';
+    else if (updatedQuantity < 5) newStatus = 'Low Stock'; // Example threshold
+
+    updateItem(itemId, { quantity: updatedQuantity, status: newStatus, lastScanned: new Date().toLocaleDateString() });
+  };
+
   return (
     <InventoryContext.Provider
       value={{
         items,
+        history, // Provide history state
         checkedIn,
         checkedOut,
         lowStockCount,
         addItem,
         updateItem,
+        logInventoryAction, // Provide the new function
       }}>
       {children}
     </InventoryContext.Provider>

@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { Header } from '@/components/Header';
 import { useInventory, ItemCategory } from '@/contexts/InventoryContext';
@@ -12,16 +13,33 @@ import { useInventory, ItemCategory } from '@/contexts/InventoryContext';
 const CATEGORIES: Array<'All' | ItemCategory> = ['All', 'Medication', 'Equipment', 'Supplies'];
 
 export default function InventoryScreen() {
-  const { items } = useInventory();
+  const { items, logInventoryAction } = useInventory();
   const [selectedCategory, setSelectedCategory] = useState<'All' | ItemCategory>('All');
+  const [quantitiesToUse, setQuantitiesToUse] = useState<{ [itemId: string]: string }>({});
 
   const filteredItems =
     selectedCategory === 'All'
       ? items
       : items.filter((item) => item.category === selectedCategory);
 
+  // Helper function to get the quantity from state, defaulting to 1 if not set or invalid
+  const getQuantityForUse = (itemId: string): number => {
+    const q = parseInt(quantitiesToUse[itemId] || '1', 10);
+    return isNaN(q) || q < 1 ? 1 : q;
+  };
+
+  // Helper function to update the quantity for a specific item
+  const handleQuantityChange = (itemId: string, value: string) => {
+    setQuantitiesToUse(prev => ({
+      ...prev,
+      // Allow only non-zero digits. An empty string is allowed so the user can clear the input.
+      // This prevents '0' from being entered.
+      [itemId]: value.replace(/[^1-9]/g, ''),
+    }));
+  };
+
   return (
-    <View style={styles.container}>
+    <View style={styles.container}> 
       <Header />
       <View style={styles.content}>
         <Text style={styles.title}>Full Inventory</Text>
@@ -63,13 +81,23 @@ export default function InventoryScreen() {
                     {item.id} • {item.category}
                   </Text>
                 </View>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    item.status === 'In Stock' && styles.statusInStock,
-                    item.status === 'Low Stock' && styles.statusLowStock,
-                  ]}>
-                  <Text style={styles.statusText}>{item.status}</Text>
+                {/* Container for Status Badge and Quantity Input */}
+                <View style={styles.statusAndQuantityContainer}>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      item.status === 'In Stock' && styles.statusInStock,
+                      item.status === 'Low Stock' && styles.statusLowStock,
+                    ]}>
+                    <Text style={styles.statusText}>{item.status}</Text>
+                  </View>
+                  <TextInput
+                    style={styles.quantityInput}
+                    onChangeText={(value) => handleQuantityChange(item.id, value)}
+                    value={quantitiesToUse[item.id]} // Allow empty string for deletion
+                    keyboardType="numeric"
+                    placeholder="Qty"
+                    maxLength={3} />
                 </View>
               </View>
 
@@ -78,12 +106,61 @@ export default function InventoryScreen() {
                   <Text style={styles.detailLabel}>Quantity</Text>
                   <Text style={styles.detailValue}>{item.quantity} units</Text>
                 </View>
-                <View style={styles.detailItem}>
+                <View style={[styles.detailItem, { alignItems: 'flex-end' }]}>
                   <Text style={styles.detailLabel}>Last Scanned</Text>
-                  <Text style={styles.detailValue}>{item.lastScanned}</Text>
+                  <Text style={styles.detailValue}>{item.lastScanned}</Text> 
                 </View>
               </View>
-            </View>
+
+              {/* Action Buttons */}
+              <View style={styles.itemActions}>
+                {/* This empty view will push the button group to the right */}
+                <View style={{ flex: 1 }} />
+                <View style={styles.buttonGroup}>
+                  <TouchableOpacity
+                    style={[
+                      styles.actionButton,
+                      styles.useButton,
+                      (item.quantity < getQuantityForUse(item.id) || item.quantity <= 0) && styles.disabledButton,
+                    ]}
+                    onPress={() => logInventoryAction(item.id, 'Use', getQuantityForUse(item.id))}
+                    disabled={item.quantity < getQuantityForUse(item.id) || item.quantity <= 0}>
+                    <Text style={styles.actionButtonText}>Use</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.actionButton,
+                      styles.transferButton, // New style for Transfer
+                      (item.quantity < getQuantityForUse(item.id) || item.quantity <= 0) && styles.disabledButton,
+                    ]}
+                    // Placeholder action for Transfer
+                    onPress={() => logInventoryAction(item.id, 'Transfer', getQuantityForUse(item.id))}
+                    disabled={item.quantity < getQuantityForUse(item.id) || item.quantity <= 0}>
+                    <Text style={styles.actionButtonText}>Transfer</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.actionButton,
+                      styles.removeButton,
+                      item.quantity <= 0 && styles.disabledButton, // Disable if no items to remove
+                    ]}
+                    onPress={() => logInventoryAction(item.id, 'Remove All', item.quantity)}
+                    disabled={item.quantity <= 0}>
+                    <Text style={styles.actionButtonText}>Remove All</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {item.quantity < getQuantityForUse(item.id) && item.quantity > 0 && (
+                <Text style={styles.notEnoughItemsText}>
+                  Not enough items. Available: {item.quantity}
+                </Text>
+              )}
+              {item.quantity <= 0 && (
+                <Text style={styles.notEnoughItemsText}>
+                  Out of Stock
+                </Text>
+              )}
+            </View> 
           ))}
         </ScrollView>
       </View>
@@ -198,5 +275,67 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#1F2937',
+  },
+  itemActions: {
+    flexDirection: 'row',
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingTop: 16,
+    alignItems: 'center',
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    // Removed flex: 1 to allow buttons to take only necessary space
+    // and be grouped to the right by itemActions' justifyContent
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusAndQuantityContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 8, // Space between status badge and quantity input
+  },
+  quantityInput: {
+    width: 60, // Fixed width for the input
+    height: 36, // Fixed height
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  transferButton: {
+    backgroundColor: '#4F7FFF', // Blue for "Transfer"
+  },
+  useButton: {
+    backgroundColor: '#FB923C', // Orange for "Use"
+  },
+  removeButton: {
+    backgroundColor: '#EF4444', // Red for "Remove"
+  },
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  disabledButton: {
+    backgroundColor: '#D1D5DB', // Gray when disabled
+  },
+  notEnoughItemsText: {
+    color: '#EF4444', // Red text for warning
+    fontSize: 13,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
