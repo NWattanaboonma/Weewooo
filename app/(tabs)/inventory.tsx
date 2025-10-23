@@ -17,16 +17,16 @@ const CATEGORIES: Array<'All Categories' | ItemCategory> = [
   'Supplies',
 ];
 
-const LOCATIONS: Array<'All Locations' | string> = [
-  'All Locations',
+const LOCATIONS: Array<'Locations' | string> = [
+  'Locations',
   'Ambulance 1',
   'Ambulance 2',
   'Storage Room A',
   'Cabinet 3',
 ];
 
-const EXPIRING_SOON_OPTIONS: Array<'All' | 'Expiring Soon' | 'Expired'> = [
-  'All',
+const EXPIRING_SOON_OPTIONS: Array<'Expiry' | 'Expiring Soon' | 'Expired'> = [
+  'Expiry',
   'Expiring Soon', // e.g., within 30 days
   'Expired',
 ];
@@ -38,9 +38,9 @@ export default function InventoryScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<'All Locations' | string>('All Locations');
+  const [selectedLocation, setSelectedLocation] = useState<'Locations' | string>('Locations');
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
-  const [selectedExpiringSoon, setSelectedExpiringSoon] = useState<'All' | 'Expiring Soon' | 'Expired'>('All');
+  const [selectedExpiringSoon, setSelectedExpiringSoon] = useState<'Expiry' | 'Expiring Soon' | 'Expired'>('Expiry');
   const [showExpiringSoonDropdown, setShowExpiringSoonDropdown] = useState(false);
 
   const filteredItems =
@@ -50,15 +50,15 @@ export default function InventoryScreen() {
     )
     .filter((item) =>
       searchQuery === '' ||
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.location.toLowerCase().includes(searchQuery.toLowerCase()) // Search by location too
+      (item.name?.toLowerCase() ?? '').includes(searchQuery.toLowerCase()) ||
+      (item.id?.toLowerCase() ?? '').includes(searchQuery.toLowerCase()) ||
+      (item.location?.toLowerCase() ?? '').includes(searchQuery.toLowerCase()) // Search by location too
     )
     .filter((item) =>
-      selectedLocation === 'All Locations' || item.location === selectedLocation
+      selectedLocation === 'Locations' || item.location === selectedLocation
     )
     .filter((item) => {
-      if (selectedExpiringSoon === 'All') {
+      if (selectedExpiringSoon === 'Expiry') {
         return true;
       }
 
@@ -102,12 +102,12 @@ export default function InventoryScreen() {
     setShowCategoryDropdown(false);
   };
 
-  const handleLocationSelect = (location: 'All Locations' | string) => {
+  const handleLocationSelect = (location: 'Locations' | string) => {
     setSelectedLocation(location);
     setShowLocationDropdown(false);
   };
 
-  const handleExpiringSoonSelect = (option: 'All' | 'Expiring Soon' | 'Expired') => {
+  const handleExpiringSoonSelect = (option: 'Expiry' | 'Expiring Soon' | 'Expired') => {
     setSelectedExpiringSoon(option);
     setShowExpiringSoonDropdown(false);
   };
@@ -182,6 +182,70 @@ export default function InventoryScreen() {
                 </View>
               )}
             </View>
+
+            {/* Location Dropdown */}
+            <View style={styles.dropdownContainer}>
+              <TouchableOpacity
+                style={styles.dropdown}
+                onPress={() => setShowLocationDropdown(!showLocationDropdown)}>
+                <Text style={styles.dropdownText}>{selectedLocation}</Text>
+                <Text style={styles.dropdownChevron}>▼</Text>
+              </TouchableOpacity>
+
+              {showLocationDropdown && (
+                <View style={styles.dropdownMenu}>
+                  {LOCATIONS.map((location) => (
+                    <TouchableOpacity
+                      key={location}
+                      style={[
+                        styles.dropdownItem,
+                        selectedLocation === location && styles.dropdownItemSelected,
+                      ]}
+                      onPress={() => handleLocationSelect(location)}>
+                      <Text
+                        style={[
+                          styles.dropdownItemText,
+                          selectedLocation === location && styles.dropdownItemTextSelected,
+                        ]}>
+                        {location}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* Expiring Soon Dropdown */}
+            <View style={styles.dropdownContainer}>
+              <TouchableOpacity
+                style={styles.dropdown}
+                onPress={() => setShowExpiringSoonDropdown(!showExpiringSoonDropdown)}>
+                <Text style={styles.dropdownText}>{selectedExpiringSoon}</Text>
+                <Text style={styles.dropdownChevron}>▼</Text>
+              </TouchableOpacity>
+
+              {showExpiringSoonDropdown && (
+                <View style={styles.dropdownMenu}>
+                  {EXPIRING_SOON_OPTIONS.map((option) => (
+                    <TouchableOpacity
+                      key={option}
+                      style={[
+                        styles.dropdownItem,
+                        selectedExpiringSoon === option && styles.dropdownItemSelected,
+                      ]}
+                      onPress={() => handleExpiringSoonSelect(option)}>
+                      <Text
+                        style={[
+                          styles.dropdownItemText,
+                          selectedExpiringSoon === option && styles.dropdownItemTextSelected,
+                        ]}>
+                        {option}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
           </View>
         )}
 
@@ -214,16 +278,19 @@ export default function InventoryScreen() {
                       item.status === 'In Stock' && styles.statusInStock,
                       item.status === 'Low Stock' && styles.statusLowStock,
                     ]}>
-                    <Text style={styles.statusText}>{item.status}</Text>
+                    <Text style={[
+                      styles.statusText,
+                      item.status === 'Low Stock' && { color: '#991B1B' }, // Override for low stock
+                    ]}>{item.status}</Text>
                   </View>
                   <TextInput
                     style={styles.quantityInput}
                     onChangeText={(value) => handleQuantityChange(item.id, value)}
                     value={quantitiesToUse[item.id]} // Allow empty string for deletion
                     keyboardType="numeric"
-                    placeholder="Qty"
+                    placeholder="1"
                     maxLength={3} />
-                </View>
+              </View>
               </View>
 
               <View style={styles.itemDetails}>
@@ -234,6 +301,18 @@ export default function InventoryScreen() {
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Last Scanned</Text>
                   <Text style={styles.detailValue}>{item.lastScanned}</Text> 
+                </View>
+              </View>
+              <View style={styles.itemDetails}>
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>Location</Text>
+                  <Text style={styles.detailValue}>{item.location}</Text>
+                </View>
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>Expires</Text>
+                  <Text style={[styles.detailValue, isExpired(item.expiryDate) && styles.expiredText]}>
+                    {item.expiryDate}
+                  </Text>
                 </View>
               </View>
 
@@ -293,6 +372,27 @@ export default function InventoryScreen() {
     </View>
   );
 }
+
+// Helper function to check if an item is expired
+const isExpired = (expiryDateString: string): boolean => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiryDate = new Date(expiryDateString);
+  expiryDate.setHours(0, 0, 0, 0);
+  return expiryDate < today;
+};
+
+// Helper function to check if an item is expiring soon (within 30 days)
+const isExpiringSoon = (expiryDateString: string): boolean => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiryDate = new Date(expiryDateString);
+  expiryDate.setHours(0, 0, 0, 0);
+  const thirtyDaysFromNow = new Date();
+  thirtyDaysFromNow.setDate(today.getDate() + 30);
+  thirtyDaysFromNow.setHours(0, 0, 0, 0);
+  return expiryDate >= today && expiryDate <= thirtyDaysFromNow;
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -474,8 +574,6 @@ const styles = StyleSheet.create({
   },
   statusLowStock: {
     backgroundColor: '#FEE2E2',
-    // To make text readable on red background
-    color: '#991B1B',
   },
   statusText: {
     fontSize: 13,
@@ -558,5 +656,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 8,
     textAlign: 'center',
+  },
+  expiredText: {
+    color: '#EF4444', // Red color for expired items
+    fontWeight: '700',
   },
 });
