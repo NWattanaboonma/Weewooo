@@ -69,7 +69,13 @@ export default function HistoryScreen() {
             <IconSymbol name="line.horizontal.3.decrease.circle" size={16} color="#4F7FFF" />
             <Text style={styles.controlButtonText}>Action: {filterAction}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.controlButton} onPress={() => setFilterCategory(filterCategory === 'All' ? 'Medication' : 'All')}>
+         <TouchableOpacity style={styles.controlButton} onPress={() => {
+            // Cycle through categories: All -> Medication -> Equipment -> Supplies -> All
+            const categories = ['All', 'Medication', 'Equipment', 'Supplies'];
+            const currentIndex = categories.indexOf(filterCategory);
+            const nextIndex = (currentIndex + 1) % categories.length;
+            setFilterCategory(categories[nextIndex]);
+          }}>
             <IconSymbol name="tag.fill" size={16} color="#4F7FFF" />
             <Text style={styles.controlButtonText}>Category: {filterCategory}</Text>
           </TouchableOpacity>
