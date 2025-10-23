@@ -6,6 +6,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { InventoryProvider } from '@/contexts/InventoryContext';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -18,15 +19,25 @@ export default function RootLayout() {
   }
 
   return (
-    <InventoryProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-          <Stack.Screen name="item-details" options={{ headerShown: true }} />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
-    </InventoryProvider>
+    <NotificationProvider>
+      <InventoryProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+            <Stack.Screen 
+              name="notifications" 
+              options={{ 
+                headerShown: false,
+                presentation: 'card',
+                animation: 'slide_from_right'
+              }} 
+            />
+            <Stack.Screen name="item-details" options={{ headerShown: true }} />
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </InventoryProvider>
+    </NotificationProvider>
   );
 }

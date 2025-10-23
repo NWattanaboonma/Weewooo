@@ -14,15 +14,24 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: '#4F7FFF',
+        tabBarInactiveTintColor: '#9CA3AF',
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            position: 'absolute',
-          },
-          default: {},
-        }),
+        tabBarStyle: {
+          backgroundColor: '#FFFFFF',  // สีพื้นหลังของ tab bar
+          borderTopColor: '#E5E7EB',   // สีเส้นขอบด้านบน
+          borderTopWidth: 1,           // ความหนาของเส้นขอบ
+          height: 80,                  // ความสูงของ tab bar
+          paddingBottom: 8,            // padding ด้านล่าง
+          paddingTop: 8,               // padding ด้านบน
+        },
+        // tabBarStyle: Platform.select({
+        //   ios: {
+        //     position: 'absolute',
+        //   },
+        //   default: {},
+        // }),
       }}>
       <Tabs.Screen
         name="index"
@@ -50,6 +59,12 @@ export default function TabLayout() {
         options={{
           title: 'History',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="clock.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null, // ซ่อนจาก tab bar แต่ยังสามารถ navigate ได้
         }}
       />
     </Tabs>

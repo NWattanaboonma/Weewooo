@@ -90,20 +90,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkedInCard: {
-    backgroundColor: '#4ADE80',
+    backgroundColor: '#E8F6FB',  
   },
   checkedOutCard: {
-    backgroundColor: '#FB923C',
+    backgroundColor: '#E6F0FB',
   },
   statNumber: {
     fontSize: 48,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#20293A',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: '#20293A',
     opacity: 0.95,
   },
   alertContainer: {
@@ -139,8 +139,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   quickActionButton: {
-    backgroundColor: '#4F7FFF',
-    borderRadius: 12,
+    backgroundColor: '#3D99E3',
+    borderRadius: 50,
     padding: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
