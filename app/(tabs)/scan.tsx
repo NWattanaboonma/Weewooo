@@ -36,6 +36,37 @@ export default function ScanScreen() {
   // NOTE: Removed the useEffect dependency array to prevent rapid re-runs during navigation.
   // The permission logic is now integrated into the render logic instead.
 
+  const processScannedCode = (code: string) => {
+    // centralize submit behavior so both camera and manual path use same logic
+    const normalized = code?.trim() ?? "";
+    if (!normalized) return;
+
+    if (!VALID_QR_CODES.has(normalized)) {
+      alert(`Invalid QR code: "${normalized}".`);
+      return;
+    }
+
+    // mark as scanned to debounce repeated camera events
+    setScanned(true);
+    setBarcode(normalized);
+
+    // Log action directly (auto-submit)
+    try {
+      logInventoryAction(normalized, "Check In", 1);
+    } catch (e) {
+      // safe fallback if context fn not available
+      console.warn("logInventoryAction failed", e);
+    }
+
+    alert(`Logged action for item: ${normalized} (Check In, Quantity 1)`);
+
+    // keep scanned flag for 2s to prevent immediate re-scan, then clear barcode
+    setTimeout(() => {
+      setScanned(false);
+      setBarcode("");
+    }, 2000);
+  };
+
   const handleBarcodeScan = (data: string) => {
     const code = data?.trim() ?? "";
     if (!scanned) {
@@ -48,10 +79,8 @@ export default function ScanScreen() {
         return;
       }
 
-      setScanned(true);
-      setBarcode(code);
-      // Wait 2 seconds before allowing another scan
-      setTimeout(() => setScanned(false), 2000);
+      // Auto-submit the valid scanned code
+      processScannedCode(code);
     }
   };
 
@@ -64,15 +93,13 @@ export default function ScanScreen() {
       return;
     }
 
-    // For demonstration, we'll log a "Check In" of 1 unit.
-    // In a real application, you would have UI to select the action (Check In/Out) and quantity.
-    logInventoryAction(code, "Check In", 1);
-    alert(`Logged action for item: ${code} (Check In, Quantity 1)`);
-    setBarcode("");
+    // Use the same processing function for manual submit
+    processScannedCode(code);
   };
 
   const handleQuickScan = (code: string) => {
-    setBarcode(code);
+    // For quick-test buttons we want to auto-submit as well
+    processScannedCode(code);
   };
 
   const renderCamera = () => {
