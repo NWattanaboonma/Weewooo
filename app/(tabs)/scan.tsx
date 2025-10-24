@@ -11,7 +11,7 @@ import {
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/IconSymbol";
-import { useInventory } from '@/contexts/InventoryContext'; // Import useInventory hook
+import { useInventory } from "@/contexts/InventoryContext"; // Import useInventory hook
 // Import the code scanner component
 import { CodeScanner } from "@/components/CodeScanner";
 
@@ -24,6 +24,9 @@ const QUICK_TEST_SCANS = [
   "SUP002",
 ];
 
+// Allowed set for validation
+const VALID_QR_CODES = new Set(QUICK_TEST_SCANS);
+
 export default function ScanScreen() {
   const [barcode, setBarcode] = useState("");
   const [scanned, setScanned] = useState(false);
@@ -34,22 +37,38 @@ export default function ScanScreen() {
   // The permission logic is now integrated into the render logic instead.
 
   const handleBarcodeScan = (data: string) => {
+    const code = data?.trim() ?? "";
     if (!scanned) {
+      // Validate against allowed codes
+      if (!VALID_QR_CODES.has(code)) {
+        // show error and debounce short period so user sees feedback
+        setScanned(true);
+        setTimeout(() => setScanned(false), 2000);
+        alert(`Invalid QR code: "${code}".`);
+        return;
+      }
+
       setScanned(true);
-      setBarcode(data);
+      setBarcode(code);
       // Wait 2 seconds before allowing another scan
       setTimeout(() => setScanned(false), 2000);
     }
   };
 
   const handleSubmit = () => {
-    if (barcode.trim()) {
-      // For demonstration, we'll log a "Check In" of 1 unit.
-      // In a real application, you would have UI to select the action (Check In/Out) and quantity.
-      logInventoryAction(barcode.trim(), 'Check In', 1);
-      alert(`Logged action for item: ${barcode.trim()} (Check In, Quantity 1)`);
-      setBarcode("");
+    const code = barcode.trim();
+    if (!code) return;
+
+    if (!VALID_QR_CODES.has(code)) {
+      alert(`Invalid QR code: "${code}". Please scan or enter a valid code.`);
+      return;
     }
+
+    // For demonstration, we'll log a "Check In" of 1 unit.
+    // In a real application, you would have UI to select the action (Check In/Out) and quantity.
+    logInventoryAction(code, "Check In", 1);
+    alert(`Logged action for item: ${code} (Check In, Quantity 1)`);
+    setBarcode("");
   };
 
   const handleQuickScan = (code: string) => {
@@ -61,7 +80,9 @@ export default function ScanScreen() {
     if (Platform.OS === "web") {
       // IMPORTANT: The web component handles its own permissions and loading.
       // We only render it and pass the success handler.
-      return <CodeScanner onDetected={handleBarcodeScan} hasScanned={scanned} />;
+      return (
+        <CodeScanner onDetected={handleBarcodeScan} hasScanned={scanned} />
+      );
     }
 
     // --- MOBILE (Android/iOS) LOGIC ---
