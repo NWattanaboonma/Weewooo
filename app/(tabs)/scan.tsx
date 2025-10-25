@@ -30,6 +30,9 @@ const VALID_QR_CODES = new Set(QUICK_TEST_SCANS);
 export default function ScanScreen() {
   const [barcode, setBarcode] = useState("");
   const [scanned, setScanned] = useState(false);
+  const [actionType, setActionType] = useState<"Check In" | "Check Out">(
+    "Check In"
+  );
   const { logInventoryAction } = useInventory(); // Get logInventoryAction from context
   const [permission, requestPermission] = useCameraPermissions();
 
@@ -52,19 +55,20 @@ export default function ScanScreen() {
 
     // Log action directly (auto-submit)
     try {
-      logInventoryAction(normalized, "Check In", 1);
+      // Use the currently selected action (Check In or Check Out)
+      logInventoryAction(normalized, actionType, 1);
     } catch (e) {
       // safe fallback if context fn not available
       console.warn("logInventoryAction failed", e);
     }
 
-    alert(`Logged action for item: ${normalized} (Check In, Quantity 1)`);
+    alert(`Logged action for item: ${normalized} (${actionType}, Quantity 1)`);
 
     // keep scanned flag for 2s to prevent immediate re-scan, then clear barcode
     setTimeout(() => {
       setScanned(false);
       setBarcode("");
-    }, 6000);
+    }, 5000);
   };
 
   const handleBarcodeScan = (data: string) => {
@@ -100,6 +104,50 @@ export default function ScanScreen() {
   const handleQuickScan = (code: string) => {
     // For quick-test buttons we want to auto-submit as well
     processScannedCode(code);
+  };
+
+  const renderActionSelector = () => {
+    return (
+      <View style={styles.actionSelectorContainer}>
+        <TouchableOpacity
+          style={
+            actionType === "Check In"
+              ? styles.actionButtonActive
+              : styles.actionButton
+          }
+          onPress={() => setActionType("Check In")}
+        >
+          <Text
+            style={
+              actionType === "Check In"
+                ? styles.actionButtonTextActive
+                : styles.actionButtonText
+            }
+          >
+            Check In
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={
+            actionType === "Check Out"
+              ? styles.actionButtonActive
+              : styles.actionButton
+          }
+          onPress={() => setActionType("Check Out")}
+        >
+          <Text
+            style={
+              actionType === "Check Out"
+                ? styles.actionButtonTextActive
+                : styles.actionButtonText
+            }
+          >
+            Check Out
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
   };
 
   const renderCamera = () => {
@@ -186,6 +234,7 @@ export default function ScanScreen() {
     <View style={styles.container}>
       <Header />
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {renderActionSelector()}
         <View style={styles.cameraContainer}>{renderCamera()}</View>
 
         <View style={styles.manualEntryContainer}>
@@ -306,6 +355,36 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     marginTop: 8,
+  },
+  actionSelectorContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 12,
+    gap: 12,
+    backgroundColor: "#F9FAFB",
+  },
+  actionButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    backgroundColor: "#E5E7EB",
+  },
+  actionButtonActive: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    backgroundColor: "#4F7FFF",
+  },
+  actionButtonText: {
+    color: "#374151",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  actionButtonTextActive: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 16,
   },
   manualEntryContainer: {
     backgroundColor: "#FFFFFF",

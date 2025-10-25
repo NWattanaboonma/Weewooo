@@ -40,6 +40,10 @@ export default function HistoryScreen() {
       }
       if (sortBy === "Quantity") {
         // Numeric sort: largest quantity first
+        // return Number(b.quantity) - Number(a.quantity); // This is the original line
+
+        // REVISED LOGIC to ensure Descending sort (largest on top)
+        // If your quantities include Check Out as negative numbers, this will still put the largest positive numbers on top.
         return Number(b.quantity) - Number(a.quantity);
       }
       return 0;
