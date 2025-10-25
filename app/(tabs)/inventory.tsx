@@ -34,7 +34,8 @@ const EXPIRING_SOON_OPTIONS: Array<
 ];
 
 export default function InventoryScreen() {
-  const { items, logInventoryAction } = useInventory();
+  const { items, logInventoryAction, recentSearches, addRecentSearch } =
+    useInventory();
   const [selectedCategory, setSelectedCategory] = useState<
     "All Categories" | ItemCategory
   >("All Categories");
@@ -42,6 +43,7 @@ export default function InventoryScreen() {
     [itemId: string]: string;
   }>({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<
@@ -143,18 +145,47 @@ export default function InventoryScreen() {
             placeholderTextColor="#9CA3AF"
             value={searchQuery}
             onChangeText={setSearchQuery}
+            onSubmitEditing={() => {
+              if (searchQuery.trim()) {
+                addRecentSearch(searchQuery.trim());
+                setIsSearchFocused(false);
+              }
+            }}
             autoCapitalize="none"
             autoCorrect={false}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
           />
           {searchQuery !== "" && (
             <TouchableOpacity
               style={styles.clearButton}
-              onPress={() => setSearchQuery("")}
+              onPress={() => {
+                setSearchQuery("");
+              }}
             >
               <Text style={styles.clearButtonText}>✕</Text>
             </TouchableOpacity>
           )}
         </View>
+
+        {/* Recent Searches Dropdown */}
+        {isSearchFocused && searchQuery === "" && recentSearches.length > 0 && (
+          <View style={styles.recentSearchesContainer}>
+            <Text style={styles.recentSearchesTitle}>Recent Searches</Text>
+            {recentSearches.map((search, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.recentSearchItem}
+                onPress={() => {
+                  setSearchQuery(search);
+                  setIsSearchFocused(false);
+                }}
+              >
+                <Text style={styles.recentSearchText}>🕒 {search}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {/* Filters Toggle */}
         <TouchableOpacity
@@ -737,5 +768,40 @@ const styles = StyleSheet.create({
   expiredText: {
     color: "#EF4444", // Red color for expired items
     fontWeight: "700",
+  },
+  recentSearchesContainer: {
+    position: "absolute",
+    top: 120, // Positioned below the search bar
+    left: 20,
+    right: 20,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    zIndex: 1000,
+    elevation: 5, // for Android shadow
+    shadowColor: "#000", // for iOS shadow
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  recentSearchesTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#6B7280",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  recentSearchItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  recentSearchText: {
+    fontSize: 15,
+    color: "#1F2937",
   },
 });

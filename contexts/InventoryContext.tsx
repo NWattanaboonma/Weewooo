@@ -43,8 +43,10 @@ interface InventoryContextType {
   checkedIn: number;
   checkedOut: number;
   lowStockCount: number;
+  recentSearches: string[];
   addItem: (item: InventoryItem) => void;
   updateItem: (id: string, updates: Partial<InventoryItem>) => void;
+  addRecentSearch: (search: string) => void;
   logInventoryAction: (
     itemId: string,
     action: HistoryAction,
@@ -180,6 +182,7 @@ const dummyHistory: HistoryItem[] = [
 export function InventoryProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<InventoryItem[]>(mockData);
   const [history, setHistory] = useState<HistoryItem[]>(dummyHistory); // New state for history
+  const [recentSearches, setRecentSearches] = useState<string[]>([]); // State for recent searches
 
   const lowStockCount = items.filter(
     (item) => item.status === "Low Stock"
@@ -212,6 +215,18 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
   };
 
   // New function to log inventory actions and update item quantity
+  const addRecentSearch = (search: string) => {
+    // Don't add empty searches
+    if (!search.trim()) return;
+
+    setRecentSearches((prevSearches) => {
+      // Remove the search if it already exists (to move it to the front)
+      const filteredSearches = prevSearches.filter((s) => s !== search);
+      // Add the new search to the beginning and limit to 5 recent searches
+      return [search, ...filteredSearches].slice(0, 5);
+    });
+  };
+
   const logInventoryAction = (
     itemId: string,
     action: HistoryAction,
@@ -264,8 +279,10 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
         checkedIn,
         checkedOut,
         lowStockCount,
+        recentSearches,
         addItem,
         updateItem,
+        addRecentSearch,
         logInventoryAction, // Provide the new function
       }}
     >
