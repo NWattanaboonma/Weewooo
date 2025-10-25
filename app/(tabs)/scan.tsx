@@ -64,7 +64,7 @@ export default function ScanScreen() {
     setTimeout(() => {
       setScanned(false);
       setBarcode("");
-    }, 2000);
+    }, 6000);
   };
 
   const handleBarcodeScan = (data: string) => {
