@@ -15,7 +15,7 @@ import { useInventory } from "@/contexts/InventoryContext"; // Import useInvento
 export default function HistoryScreen() {
   const { history } = useInventory(); // Get history from the context
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("Date"); // 'Date', 'Item Name', 'Case ID', etc.
+  const [sortBy, setSortBy] = useState("Date"); // 'Date' or 'Quantity'
   const [filterAction, setFilterAction] = useState("All"); // 'All', 'Check In', 'Check Out'
   const [filterCategory, setFilterCategory] = useState("All"); // 'All', 'Medication', 'Equipment', 'Supplies'
   const router = useRouter();
@@ -38,7 +38,10 @@ export default function HistoryScreen() {
       if (sortBy === "Date") {
         return new Date(b.date).getTime() - new Date(a.date).getTime(); // Newest first
       }
-      // Add other sort criteria here if needed
+      if (sortBy === "Quantity") {
+        // Numeric sort: largest quantity first
+        return Number(b.quantity) - Number(a.quantity);
+      }
       return 0;
     });
 
@@ -79,7 +82,11 @@ export default function HistoryScreen() {
         <View style={styles.controlsRow}>
           <TouchableOpacity
             style={styles.controlButton}
-            onPress={() => setSortBy("Date")}
+            onPress={() => {
+              const options = ["Date", "Quantity"];
+              const i = options.indexOf(sortBy);
+              setSortBy(options[(i + 1) % options.length]);
+            }}
           >
             <IconSymbol name="arrow.up.arrow.down" size={16} color="#4F7FFF" />
             <Text style={styles.controlButtonText}>Sort by: {sortBy}</Text>
