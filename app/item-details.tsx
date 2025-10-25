@@ -69,9 +69,7 @@ export default function ItemDetailsScreen() {
           </View>
           <View style={[styles.detailRow, styles.detailRowBorder]}>
             <Text style={styles.detailLabel}>Location</Text>
-            <Text style={styles.detailValue}>
-              Ambulance 1, Main Compartment
-            </Text>{" "}
+            <Text style={styles.detailValue}>{item.location}</Text>{" "}
             {/* Placeholder location */}
           </View>
           <View style={[styles.detailRow, styles.detailRowBorder]}>
