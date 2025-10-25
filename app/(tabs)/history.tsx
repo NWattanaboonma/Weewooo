@@ -39,12 +39,17 @@ export default function HistoryScreen() {
         return new Date(b.date).getTime() - new Date(a.date).getTime(); // Newest first
       }
       if (sortBy === "Quantity") {
-        // Numeric sort: largest quantity first
-        // return Number(b.quantity) - Number(a.quantity); // This is the original line
+        // Convert quantity to number, making Check Out negative for sorting
+        const quantityA = Number(a.quantity);
+        const effectiveQuantityA =
+          a.action === "Check Out" ? -quantityA : quantityA;
 
-        // REVISED LOGIC to ensure Descending sort (largest on top)
-        // If your quantities include Check Out as negative numbers, this will still put the largest positive numbers on top.
-        return Number(b.quantity) - Number(a.quantity);
+        const quantityB = Number(b.quantity);
+        const effectiveQuantityB =
+          b.action === "Check Out" ? -quantityB : quantityB;
+
+        // Descending sort based on effective quantity (largest number, or largest Check In, first)
+        return effectiveQuantityB - effectiveQuantityA;
       }
       return 0;
     });
@@ -82,7 +87,7 @@ export default function HistoryScreen() {
           )}
         </View>
 
-        {/* Sort, Filter, Customize */}
+        {/* Sort, Filter */}
         <View style={styles.controlsRow}>
           <TouchableOpacity
             style={styles.controlButton}
@@ -97,9 +102,13 @@ export default function HistoryScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.controlButton}
-            onPress={() =>
-              setFilterAction(filterAction === "All" ? "Check In" : "All")
-            }
+            onPress={() => {
+              // Cycle through Action categories: All -> Check In -> Check Out -> All
+              const actions = ["All", "Check In", "Check Out"];
+              const currentIndex = actions.indexOf(filterAction);
+              const nextIndex = (currentIndex + 1) % actions.length;
+              setFilterAction(actions[nextIndex]);
+            }}
           >
             <IconSymbol
               name="line.horizontal.3.decrease.circle"
@@ -111,7 +120,7 @@ export default function HistoryScreen() {
           <TouchableOpacity
             style={styles.controlButton}
             onPress={() => {
-              // Cycle through categories: All -> Medication -> Equipment -> Supplies -> All
+              // Cycle through item categories: All -> Medication -> Equipment -> Supplies -> All
               const categories = ["All", "Medication", "Equipment", "Supplies"];
               const currentIndex = categories.indexOf(filterCategory);
               const nextIndex = (currentIndex + 1) % categories.length;
@@ -123,10 +132,7 @@ export default function HistoryScreen() {
               Category: {filterCategory}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.controlButton}>
-            <IconSymbol name="gearshape.fill" size={16} color="#4F7FFF" />
-            <Text style={styles.controlButtonText}>Customize</Text>
-          </TouchableOpacity>
+          {/* Customize button is removed */}
         </View>
 
         {/* Record Count */}
