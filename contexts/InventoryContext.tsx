@@ -34,6 +34,7 @@ export interface InventoryItem {
   lastScanned: string;
   status: "In Stock" | "Low Stock" | "Out of Stock";
   expiryDate: string;
+  location: string;
 }
 
 interface InventoryContextType {
@@ -64,6 +65,7 @@ const mockData: InventoryItem[] = [
     lastScanned: "21/10/2025",
     status: "In Stock",
     expiryDate: "2024-10-21",
+    location: "Ambulance 1",
   },
   {
     id: "MED002",
@@ -73,6 +75,7 @@ const mockData: InventoryItem[] = [
     lastScanned: "21/10/2025",
     status: "In Stock",
     expiryDate: "2027-01-07",
+    location: "Ambulance 1",
   },
   {
     id: "MED003",
@@ -82,6 +85,7 @@ const mockData: InventoryItem[] = [
     lastScanned: "21/10/2025",
     status: "In Stock",
     expiryDate: "2025-11-11",
+    location: "Ambulance 2",
   },
   {
     id: "EQP001",
@@ -91,6 +95,7 @@ const mockData: InventoryItem[] = [
     lastScanned: "21/10/2025",
     status: "In Stock",
     expiryDate: "2026-02-03",
+    location: "Ambulance Storage Room A",
   },
   {
     id: "EQP002",
@@ -100,6 +105,7 @@ const mockData: InventoryItem[] = [
     lastScanned: "20/10/2025",
     status: "Low Stock",
     expiryDate: "2023-04-20",
+    location: "Storage Room A",
   },
   {
     id: "SUP001",
@@ -109,6 +115,7 @@ const mockData: InventoryItem[] = [
     lastScanned: "21/10/2025",
     status: "In Stock",
     expiryDate: "2026-10-21",
+    location: "Cabinet 3",
   },
   {
     id: "SUP002",
@@ -118,6 +125,7 @@ const mockData: InventoryItem[] = [
     lastScanned: "19/10/2025",
     status: "Low Stock",
     expiryDate: "2025-11-20",
+    location: "Cabinet 3",
   },
 ];
 
