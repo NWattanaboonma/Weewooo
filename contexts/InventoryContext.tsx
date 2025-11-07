@@ -8,7 +8,7 @@ import React, {
 import { useNotifications } from "./NotificationContext"; // Dependency to refresh notifications
 
 // 1. API Configuration: *** UPDATE THIS WITH YOUR ACTUAL SERVER IP ***
-const API_BASE_URL = 'http://172.20.10.4:3000/api'; 
+const API_BASE_URL = 'http://192.168.1.47:3000/api'; 
 // Example: http://192.168.1.100:3000/api
 
 export type ItemCategory = "Medication" | "Equipment" | "Supplies";
@@ -34,16 +34,17 @@ export interface HistoryItem {
 
 // Interface matches the data structure returned by the API's inventory endpoint
 export interface InventoryItem {
-  id: string; // This is the item_id (barcode)
+  dbId: number;          // DB primary key (id)
+  id: string;            // barcode (item_id)
   name: string;
   category: ItemCategory;
   quantity: number;
   lastScanned: string;
-  status: "In Stock" | "Low Stock" | "Out of Stock"; // This is calculated by the API
+  status: "In Stock" | "Low Stock" | "Out of Stock";
   expiryDate: string;
   location: string;
-  // Note: dbId, min_quantity are handled by the backend
 }
+
 
 interface InventoryContextType {
   items: InventoryItem[];
@@ -89,42 +90,49 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
    */
   const loadInitialData = async () => {
     try {
-      // Fetch Inventory (and summary stats)
-      const inventoryPromise = fetch(`${API_BASE_URL}/inventory`);
-      // Fetch History
-      const historyPromise = fetch(`${API_BASE_URL}/history`);
+      console.log("📥 Loading data from API...");
 
       const [inventoryResponse, historyResponse] = await Promise.all([
-          inventoryPromise,
-          historyPromise
+        fetch(`${API_BASE_URL}/inventory`),
+        fetch(`${API_BASE_URL}/history`)
       ]);
-      
-      if (!inventoryResponse.ok) {
-          throw new Error(`Failed to fetch inventory: ${inventoryResponse.statusText}`);
-      }
-      if (!historyResponse.ok) {
-          throw new Error(`Failed to fetch history: ${historyResponse.statusText}`);
-      }
-      
+
+      if (!inventoryResponse.ok) throw new Error("Failed loading inventory");
+      if (!historyResponse.ok) throw new Error("Failed loading history");
+
       const inventoryData = await inventoryResponse.json();
       const historyData = await historyResponse.json();
 
-      setItems(inventoryData.items || []);
-      setHistory(historyData || []);
-      
-      // Update summary stats from the API's returned data
-      setCheckedIn(inventoryData.summary?.checkedIn || 0);
-      setCheckedOut(inventoryData.summary?.checkedOut || 0);
-      setLowStockCount(inventoryData.summary?.lowStockCount || 0);
+      // ✅ Map backend inventory into React Native structure
+      const mappedItems: InventoryItem[] = inventoryData.items.map((item: any) => ({
+        dbId: item.id,
+        id: item.item_id,
+        name: item.name,
+        category: item.category,
+        quantity: item.quantity,
+        lastScanned: item.lastScanned,
+        status: item.status,
+        expiryDate: item.expiryDate,
+        location: item.location,
+      }));
 
-      // Trigger a notification load to ensure alerts are up-to-date
-      loadNotifications(); 
+      setItems(mappedItems);
+      setHistory(historyData);
 
-    } catch (e) {
-      console.error("Error loading initial data:", e);
-      // You should add a simple UI alert or error state here for the user
+      setCheckedIn(inventoryData.summary?.checkedIn ?? 0);
+      setCheckedOut(inventoryData.summary?.checkedOut ?? 0);
+      setLowStockCount(inventoryData.summary?.lowStockCount ?? 0);
+
+      console.log("✅ Inventory loaded:", mappedItems.length);
+      console.log("✅ History loaded:", historyData.length);
+
+      loadNotifications();
+
+    } catch (e: any) {
+      console.error("❌ Error loading initial data: ", e);
     }
   };
+
 
   // Run on component mount to load data
   useEffect(() => {

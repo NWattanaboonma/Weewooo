@@ -10,7 +10,7 @@ const PORT = 3000;
 
 // MySQL connection pool configuration
 const pool = mysql.createPool({
-    host: '127.0.0.1',
+    host: '192.168.1.47',
     user: 'usrParamedic',
     password: 'paramedic1234',
     database: 'QMedicDB'
@@ -137,23 +137,25 @@ app.post('/api/action/log', async (req, res) => {
  */
 app.get('/api/history', async (req, res) => {
     try {
-        // Select all fields needed by history.tsx (using the snapshot fields)
+        // CORRECTION: Use the base column names (item_id, item_name, category)
+        // to avoid SQL errors if the 'at_action' versions don't exist.
         const query = `
-            SELECT id, item_id_at_action as itemId, item_name_at_action as itemName, 
+            SELECT id, item_id as itemId, item_name as itemName, 
                    action_date as date, case_id as caseId, user, quantity, 
-                   category_at_action as category
+                   category
             FROM inventory_history
             ORDER BY action_date DESC;
         `;
         const [rows] = await pool.query(query);
         
-        // Format the date string to match the front-end mock data (e.g., '10/26/2024 10:02:22 AM')
+        // Format the date string for client display
         const history = rows.map(row => ({
             ...row,
-            date: new Date(row.date).toLocaleString('en-US', {
+            // Ensure date conversion is safe
+            date: row.date ? new Date(row.date).toLocaleString('en-US', {
                 month: '2-digit', day: '2-digit', year: 'numeric',
                 hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
-            })
+            }) : 'N/A'
         }));
 
         res.json(history);

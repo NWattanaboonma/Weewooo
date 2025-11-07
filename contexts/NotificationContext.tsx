@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 // import AsyncStorage from "@react-native-async-storage/async-storage"; 
 
 // 1. API Configuration: Use the same base URL as InventoryContext
-const API_BASE_URL = 'http://172.20.10.4:3000/api'; 
+const API_BASE_URL = 'http://192.168.1.47:3000/api'; 
 // Example: http://192.168.1.100:3000/api
 
 export type Notification = {
