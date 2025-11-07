@@ -49,7 +49,7 @@ You must have the following installed on your machine:
 
 You must ensure your MySQL database is set up with the correct credentials and schema.
 
-A. Database Connection Details
+### A. Database Connection Details
 
 The API server (server.js) connects using these credentials:
 
@@ -65,12 +65,12 @@ Database    QMedicDB
 
 Action Required: Ensure your MySQL server is running and accessible using these details.
 
-B. Essential Schema 
+### B. Essential Schema 
 
 
 ## 2. 🚀 Backend API Server Setup
 
-A. Install Dependencies
+### A. Install Dependencies
 
 In your project root (where server.js is located):
 
@@ -78,7 +78,7 @@ In your project root (where server.js is located):
 npm install express mysql2 cors
 ```
 
-B. Run the Server
+### B. Run the Server
 
 Keep this terminal window open while running the frontend:
 
@@ -90,7 +90,7 @@ The console should show: 🚀 Server running on port 3000
 
 ## 3. 📱 Frontend Application Setup (React Native/Expo)
 
-A. Install Dependencies
+### A. Install Dependencies
 
 In your project root:
 
@@ -99,19 +99,19 @@ npm install
 # OR: yarn install
 ```
 
-
-B. Critical Configuration in InventoryContext.tsx and NotificationContext.tsx
+### B. Critical Configuration in InventoryContext.tsx and NotificationContext.tsx
 
 The app must know the address of the API server.
 
 Action Required: In the file contexts/InventoryContext.tsx, update the API_BASE_URL with the correct local network IP address of the computer running your server.
 
+```bash
 // contexts/InventoryContext.tsx
 // 1. API Configuration: *** UPDATE THIS WITH YOUR ACTUAL SERVER IP ***
 const API_BASE_URL = 'http://<YOUR_COMPUTER_IP_ADDRESS>:3000/api'; 
+```
 
-
-C. Run the Frontend (using LAN)
+### C. Run the Frontend (using LAN)
 
 To avoid Mixed Content errors, do not use the tunnel unless necessary.
 
@@ -121,6 +121,7 @@ Start the Expo client for local network access:
 
 ```bash
 expo start
+# OR: npx expo start
 ```
 
 
