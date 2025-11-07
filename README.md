@@ -53,15 +53,12 @@ You must ensure your MySQL database is set up with the correct credentials and s
 
 The API server (server.js) connects using these credentials:
 
-Setting      Value
-
-Host        192.168.1.47 (Change this if MySQL is on a different machine)
-
-User        usrParamedic
-
-Password    paramedic1234
-
-Database    QMedicDB
+| Setting | Value |
+|---------|-------------|
+| **Host** | 192.168.1.47 (Change this if MySQL is on a different machine) |
+| **User** | usrParamedic |
+| **Password** | paramedic1234 |
+| **Database** | QMedicDB |
 
 Action Required: Ensure your MySQL server is running and accessible using these details.
 
