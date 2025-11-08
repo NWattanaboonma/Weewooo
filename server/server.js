@@ -1,6 +1,8 @@
 const mysql = require('mysql2/promise');
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs').promises; // Node.js File System module (for writing to api.ts)
+const path = require('path');     // Node.js Path module (to locate api.ts)
 
 const app = express();
 app.use(cors());
@@ -218,8 +220,47 @@ app.post('/api/notifications/read/:id', async (req, res) => {
 });
 
 // --- Start Server ---
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => { // <-- Make the callback async
     console.log(`\n🚀 Server running on port ${PORT}`);
-    console.log(`Access the API at http://localhost:${PORT}`);
-    console.log(`\n*** REMEMBER TO UPDATE DB_CONFIG WITH YOUR CREDENTIALS ***\n`);
+
+    // Find the local IP to show a helpful message
+    const { networkInterfaces } = require('os');
+    const nets = networkInterfaces();
+    let localIp = 'localhost';
+
+    // --- Smart IP Detection ---
+    // This logic is more robust and prioritizes common network interfaces
+    // to avoid picking virtual machine IPs.
+    const preferredInterfaces = ['Wi-Fi', 'Ethernet', 'en0', 'wlan0'];
+    for (const name of preferredInterfaces) {
+        if (nets[name]) {
+            const interfaceDetails = nets[name].find(
+                net => net.family === 'IPv4' && !net.internal
+            );
+            if (interfaceDetails) {
+                localIp = interfaceDetails.address;
+                break; // Found a good IP, stop searching
+            }
+        }
+    }
+
+    console.log(`\n✅ Server is accessible on your network at: http://${localIp}:${PORT}`);
+
+    // --- Auto-update api.ts ---
+    try {
+        const apiTsPath = path.join(__dirname, '..', 'contexts', 'api.ts');
+        const newApiUrlLine = `export const API_BASE_URL = 'http://${localIp}:${PORT}/api'; // <-- 🛑 This is auto-updated by server.js`;
+
+        let fileContent = await fs.readFile(apiTsPath, 'utf-8');
+        
+        const updatedContent = fileContent.replace(
+            /export const API_BASE_URL = '.*';/, 
+            newApiUrlLine
+        );
+
+        await fs.writeFile(apiTsPath, updatedContent, 'utf-8');
+        console.log('✅ Automatically updated contexts/api.ts with the correct IP address.');
+    } catch (error) {
+        console.error('❌ Failed to auto-update contexts/api.ts. Please update it manually.', error);
+    }
 });

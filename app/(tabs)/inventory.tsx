@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  RefreshControl, // Import RefreshControl
 } from "react-native";
 import { Header } from "@/components/Header";
 import { useInventory, ItemCategory } from "@/contexts/InventoryContext";
@@ -34,8 +35,13 @@ const EXPIRING_SOON_OPTIONS: Array<
 ];
 
 export default function InventoryScreen() {
-  const { items, logInventoryAction, recentSearches, addRecentSearch } =
-    useInventory();
+  const {
+    items,
+    logInventoryAction,
+    recentSearches,
+    addRecentSearch,
+    loadInitialData, // Get the data loading function
+  } = useInventory();
   const [selectedCategory, setSelectedCategory] = useState<
     "All Categories" | ItemCategory
   >("All Categories");
@@ -55,6 +61,14 @@ export default function InventoryScreen() {
   >("Expiry Status");
   const [showExpiringSoonDropdown, setShowExpiringSoonDropdown] =
     useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false); // State for the refresh control
+
+  // Function to handle pull-to-refresh
+  const onRefresh = React.useCallback(async () => {
+    setIsRefreshing(true);
+    await loadInitialData(); // Reload all data from the server
+    setIsRefreshing(false);
+  }, []);
 
   const filteredItems = items
     .filter(
@@ -319,6 +333,9 @@ export default function InventoryScreen() {
           style={styles.itemList}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.itemListContent}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+          }
         >
           {filteredItems.length === 0 ? (
             <View style={styles.emptyState}>
