@@ -104,8 +104,8 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
 
       // ✅ Map backend inventory into React Native structure
       const mappedItems: InventoryItem[] = inventoryData.items.map((item: any) => ({
-        dbId: item.id,
-        id: item.item_id,
+        dbId: item.dbId, // Correctly map dbId from server
+        id: item.id,     // Correctly map id (barcode) from server
         name: item.name,
         category: item.category,
         quantity: item.quantity,

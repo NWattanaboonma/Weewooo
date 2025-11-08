@@ -103,8 +103,8 @@ export default function HistoryScreen() {
           <TouchableOpacity
             style={styles.controlButton}
             onPress={() => {
-              // Cycle through Action categories: All -> Check In -> Check Out -> All
-              const actions = ["All", "Check In", "Check Out"];
+              // Cycle through all available action categories
+              const actions = ["All", "Check In", "Check Out", "Use", "Transfer", "Remove All"];
               const currentIndex = actions.indexOf(filterAction);
               const nextIndex = (currentIndex + 1) % actions.length;
               setFilterAction(actions[nextIndex]);
@@ -160,9 +160,7 @@ export default function HistoryScreen() {
                 key={item.id}
                 style={styles.historyItemCard}
                 onPress={() =>
-                  router.push(
-                    `/item-details?id=${item.itemId}&historyId=${item.id}`
-                  )
+                  router.push(`/item-details?id=${item.itemId}`)
                 }
               >
                 <View style={styles.itemHeader}>

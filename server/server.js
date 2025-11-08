@@ -99,12 +99,21 @@ app.post('/api/action/log', async (req, res) => {
         const item = items[0];
         
         // 2. Calculate New Quantity
-        const quantityChange = (action === 'Check In') ? quantity : -quantity;
-        let updatedQuantity = item.quantity + quantityChange;
-        updatedQuantity = Math.max(0, updatedQuantity); // Ensure no negative stock
+        let updatedQuantity = item.quantity;
+        const actionsThatReduceStock = ["Use", "Check Out", "Remove All"];
+
+        if (action === 'Check In') {
+            updatedQuantity += quantity;
+        } else if (actionsThatReduceStock.includes(action)) {
+            updatedQuantity -= quantity;
+        }
+        // For "Transfer", the total quantity does not change, so we do nothing here.
+
+        // Ensure quantity never goes below zero
+        updatedQuantity = Math.max(0, updatedQuantity); 
 
         // 3. Update inventory_item
-        await connection.query('UPDATE inventory_item SET quantity = ?, last_scanned = CURDATE() WHERE id = ?', [updatedQuantity, item.id]);
+        await connection.query('UPDATE inventory_item SET quantity = ?, last_scanned = NOW() WHERE id = ?', [updatedQuantity, item.id]);
 
         // 4. Insert into inventory_history
         const historyQuery = `
@@ -113,7 +122,7 @@ app.post('/api/action/log', async (req, res) => {
             VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?);
         `;
         await connection.query(historyQuery, [
-            item.id, itemId, item.name, action, quantity, caseId, user, item.category
+            item.id, itemId, item.name, action, quantity, caseId, user, item.category // Removed the extra 'quantity' parameter
         ]);
 
         // TODO: (SERVER SIDE FEATURE) Add logic here to check if the new quantity <= min_quantity 
