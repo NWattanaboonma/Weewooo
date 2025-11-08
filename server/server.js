@@ -90,6 +90,7 @@ app.get('/api/inventory', async (req, res) => {
  */
 app.post('/api/action/log', async (req, res) => {
     const { itemId, action, quantity, caseId = `C${Math.floor(Math.random() * 90000) + 10000}`, user = 'Current User' } = req.body;
+    const qty = Number(quantity) || 0;
 
     const connection = await pool.getConnection();
 
@@ -136,9 +137,15 @@ app.post('/api/action/log', async (req, res) => {
             [item.id]
         );
         const updatedItem = updatedItemRows[0];
+        const minQty = updatedItem.min_quantity ?? 3;
 
-        // check qunatity
-        if (updatedItem.quantity <= updatedItem.min_quantity) {
+        // low stock
+        console.log('🔎 Checking LowStock => quantity:', updatedItem.quantity, 'minQty:', minQty);
+
+        // Only send a low-stock alert if a stock-reducing action caused the quantity to drop.
+        const actionsThatTriggerAlert = ["Use", "Transfer", "Remove All", "Check Out"];
+
+        if (updatedItem.quantity <= minQty && actionsThatTriggerAlert.includes(action)) {
             const insertNotifQuery = `
                 INSERT INTO notification_log 
                     (item_fk, alert_type, item_id_at_alert, item_name, location, expiry_date_at_alert)
@@ -152,25 +159,31 @@ app.post('/api/action/log', async (req, res) => {
                 updatedItem.expiry_date
             ]);
 
-            await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    service_id: 'service_abc123',        
-                    template_id: 'template_k05so3m',     
-                    user_id: 'KetRjtX41DqNLAL84',         
-                    template_params: {
+            const ok = await sendEmailJS({
+                service_id: 'service_o9baz0e',
+                template_id: 'template_k05so3m', 
+                user_id: 'KetRjtX41DqNLAL84',        
+                accessToken: 'zAQUIbBQ4tu2YQdgBCbCJ', 
+                template_params: {
                     title: `${updatedItem.name} (${updatedItem.item_id})`,
+                    name: 'Q-Medic Bot',
+                    time: new Date().toLocaleString(),
                     item: updatedItem.name,
                     item_id: updatedItem.item_id,
                     category: item.category,
                     location: updatedItem.location,
-                    qty: updatedItem.quantity,
-                    min_qty: updatedItem.min_quantity,
-                    days_left: '', // ไม่จำเป็นใน low stock
-                    }
-                })
+                    quantity: updatedItem.quantity,
+                    expiry_date: formatDateForFrontend(updatedItem.expiry_date) ?? 'N/A',
+                    min_qty: minQty
+                }
                 });
+
+                if (!ok) {
+                console.error('❌ LowStock email not sent');
+                } else {
+                console.log('✅ LowStock email sent successfully');
+                }
+
         }
 
 
@@ -265,11 +278,12 @@ app.post('/api/notifications/read/:id', async (req, res) => {
 });
 
 
-    cron.schedule('0 8 * * *', async () => {
+    // Change to '* * * * *' to run every minute for testing. Remember to change it back to '0 8 * * *' for production.
+    cron.schedule('* * * * *', async () => {
         try {
             console.log('⏰ Running daily expiry check...');
             const [items] = await pool.query(`
-                SELECT id, item_id, name, category, location, expiry_date
+                SELECT id, item_id, name, category, location, expiry_date, quantity
                 FROM inventory_item
                 WHERE expiry_date IS NOT NULL
             `);
@@ -280,38 +294,107 @@ app.post('/api/notifications/read/:id', async (req, res) => {
                 const expiry = new Date(item.expiry_date);
                 const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
 
-            if (daysLeft > 0 && daysLeft <= 7) {
-                await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        service_id: 'service_abc123',        
-                        template_id: 'template_rydjjvb',     
-                        user_id: 'KetRjtX41DqNLAL84',        
-                        template_params: {
-                            title: `${item.name} (${item.item_id})`,
-                            item: item.name,
-                            item_id: item.item_id,
-                            category: item.category,
-                            location: item.location,
-                            expiry_date: item.expiry_date,
-                            days_left: daysLeft
-                        }
-                    })
+            // New check: Send an alert exactly 15 days before expiry.
+            if (daysLeft === 15) {
+                console.log(`Item ${item.item_id} is expiring in 15 days. Sending email.`);
+                const ok = await sendEmailJS({
+                    service_id: 'service_o9baz0e',
+                    template_id: 'template_rydjjvb', // Assuming this is your Expiry template
+                    user_id: 'KetRjtX41DqNLAL84',
+                    accessToken: 'zAQUIbBQ4tu2YQdgBCbCJ',
+                    template_params: {
+                        title: `15-Day Expiry Warning: ${item.name} (${item.item_id})`,
+                        name: 'Q-Medic Bot',
+                        time: new Date().toLocaleString(),
+                        item: item.name,
+                        item_id: item.item_id,
+                        category: item.category,
+                        location: item.location,
+                        quantity: item.quantity,
+                        expiry_date: formatDateForFrontend(item.expiry_date),
+                        daysLeft: daysLeft // Add daysLeft to the template
+                    }
                 });
 
-                await pool.query(`
-                    INSERT IGNORE INTO notification_log
-                    (item_fk, alert_type, item_id_at_alert, item_name, location, expiry_date_at_alert)
-                    VALUES (?, 'Expiry Warning', ?, ?, ?, ?)`,
-                    [item.id, item.item_id, item.name, item.location, item.expiry_date]
-                );
+                if (ok) {
+                    console.log(`✅ 15-day expiry email sent for ${item.item_id}`);
+                    // Log this notification to the database so it appears in the app
+                    await pool.query(`
+                        INSERT IGNORE INTO notification_log
+                        (item_fk, alert_type, item_id_at_alert, item_name, location, expiry_date_at_alert)
+                        VALUES (?, 'Expiry Warning', ?, ?, ?, ?)`,
+                        [item.id, item.item_id, item.name, item.location, item.expiry_date]
+                    );
+                }
+            }
+
+            if (daysLeft > 0 && daysLeft <= 7) {
+                console.log(`Item ${item.item_id} is expiring in ${daysLeft} days. Sending email.`);
+                const ok = await sendEmailJS({
+                    service_id: 'service_o9baz0e',
+                    template_id: 'template_rydjjvb', // Expiry template
+                    user_id: 'KetRjtX41DqNLAL84',
+                    accessToken: 'zAQUIbBQ4tu2YQdgBCbCJ', // Make sure this is your correct private key
+                    template_params: {
+                        title: `${item.name} (${item.item_id})`,
+                        name: 'Q-Medic Bot',
+                        time: new Date().toLocaleString(),
+                        item: item.name,
+                        item_id: item.item_id,
+                        category: item.category,
+                        location: item.location,
+                        quantity: item.quantity,
+                        expiry_date: formatDateForFrontend(item.expiry_date),
+                        daysLeft: daysLeft // Add daysLeft to the template
+                    }
+                });
+
+                if (ok) {
+                    console.log(`✅ Expiry email sent for ${item.item_id}`);
+                    await pool.query(`
+                        INSERT IGNORE INTO notification_log
+                        (item_fk, alert_type, item_id_at_alert, item_name, location, expiry_date_at_alert)
+                        VALUES (?, 'Expiry Warning', ?, ?, ?, ?)`,
+                        [item.id, item.item_id, item.name, item.location, item.expiry_date]
+                    );
+                } else {
+                    console.error(`❌ Failed to send expiry email for ${item.item_id}`);
+                }
             }
             }
         } catch (err) {
             console.error('⚠️ Cron job error:', err.message);
         }
-    });
+    }, { timezone: 'Asia/Bangkok' });
+
+    async function sendEmailJS({ service_id, template_id, user_id, accessToken, template_params }) {
+        try {
+            // CORRECTED: The endpoint is /api/v1.0/email/send, but it requires the accessToken for server-side calls.
+            const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                service_id,
+                template_id,
+                user_id,
+                accessToken, // This is your Private Key, required for server-side calls
+                template_params
+            })
+            });
+            const txt = await res.text();
+            if (!res.ok) {
+            console.error('❌ EmailJS REST API failed:', res.status, txt);
+            return false;
+            }
+            console.log('✅ EmailJS ok:', txt);
+            return true;
+        } catch (e) {
+            console.error('❌ EmailJS error:', e);
+            return false;
+        }
+        }
+
+
 
 
 // --- Start Server ---
