@@ -12,9 +12,12 @@ const PORT = 3000;
 const pool = mysql.createPool({
     host: '127.0.0.1',
     user: 'root',
-    password: 'Manow_wan@1234',
+    password: 'Mook12345@TH',
     database: 'QMedicDB'
 });
+
+const cron = require('node-cron');
+const fetch = require('node-fetch'); // EmailJS API
 
 // Utility function to safely format Date objects received from MySQL
 const formatDateForFrontend = (date) => {
@@ -127,6 +130,50 @@ app.post('/api/action/log', async (req, res) => {
 
         // TODO: (SERVER SIDE FEATURE) Add logic here to check if the new quantity <= min_quantity 
         //       or if a transaction triggers an expiry alert, and then call addNotification API logic.
+        // 5. check qunatity after updatinf item
+        const [updatedItemRows] = await connection.query(
+            'SELECT item_id, name, location, expiry_date, quantity, min_quantity FROM inventory_item WHERE id = ?',
+            [item.id]
+        );
+        const updatedItem = updatedItemRows[0];
+
+        // check qunatity
+        if (updatedItem.quantity <= updatedItem.min_quantity) {
+            const insertNotifQuery = `
+                INSERT INTO notification_log 
+                    (item_fk, alert_type, item_id_at_alert, item_name, location, expiry_date_at_alert)
+                VALUES (?, 'Low Stock', ?, ?, ?, ?);
+            `;
+            await connection.query(insertNotifQuery, [
+                item.id,
+                updatedItem.item_id,
+                updatedItem.name,
+                updatedItem.location,
+                updatedItem.expiry_date
+            ]);
+
+            await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    service_id: 'service_abc123',        
+                    template_id: 'template_k05so3m',     
+                    user_id: 'KetRjtX41DqNLAL84',         
+                    template_params: {
+                    title: `${updatedItem.name} (${updatedItem.item_id})`,
+                    item: updatedItem.name,
+                    item_id: updatedItem.item_id,
+                    category: item.category,
+                    location: updatedItem.location,
+                    qty: updatedItem.quantity,
+                    min_qty: updatedItem.min_quantity,
+                    days_left: '', // ไม่จำเป็นใน low stock
+                    }
+                })
+                });
+        }
+
+
 
         await connection.commit();
         res.status(200).send({ message: 'Action logged and inventory updated.', newQuantity: updatedQuantity });
@@ -216,6 +263,56 @@ app.post('/api/notifications/read/:id', async (req, res) => {
         res.status(500).send({ message: 'Failed to update notification status.' });
     }
 });
+
+
+    cron.schedule('0 8 * * *', async () => {
+        try {
+            console.log('⏰ Running daily expiry check...');
+            const [items] = await pool.query(`
+                SELECT id, item_id, name, category, location, expiry_date
+                FROM inventory_item
+                WHERE expiry_date IS NOT NULL
+            `);
+
+            const today = new Date();
+
+            for (const item of items) {
+                const expiry = new Date(item.expiry_date);
+                const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+
+            if (daysLeft > 0 && daysLeft <= 7) {
+                await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        service_id: 'service_abc123',        
+                        template_id: 'template_rydjjvb',     
+                        user_id: 'KetRjtX41DqNLAL84',        
+                        template_params: {
+                            title: `${item.name} (${item.item_id})`,
+                            item: item.name,
+                            item_id: item.item_id,
+                            category: item.category,
+                            location: item.location,
+                            expiry_date: item.expiry_date,
+                            days_left: daysLeft
+                        }
+                    })
+                });
+
+                await pool.query(`
+                    INSERT IGNORE INTO notification_log
+                    (item_fk, alert_type, item_id_at_alert, item_name, location, expiry_date_at_alert)
+                    VALUES (?, 'Expiry Warning', ?, ?, ?, ?)`,
+                    [item.id, item.item_id, item.name, item.location, item.expiry_date]
+                );
+            }
+            }
+        } catch (err) {
+            console.error('⚠️ Cron job error:', err.message);
+        }
+    });
+
 
 // --- Start Server ---
 app.listen(PORT, '0.0.0.0', () => {
