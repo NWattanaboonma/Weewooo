@@ -142,7 +142,7 @@ app.get('/api/history', async (req, res) => {
         const query = `
             SELECT id, item_id as itemId, item_name as itemName, 
                    action_date as date, case_id as caseId, user, quantity, 
-                   category
+                   category, action
             FROM inventory_history
             ORDER BY action_date DESC;
         `;

@@ -168,8 +168,14 @@ export default function HistoryScreen() {
                 <View style={styles.itemHeader}>
                   <Text style={styles.itemName}>{item.itemName}</Text>
                   <Text style={styles.itemQuantity}>
-                    {item.action === "Check In" ? "+" : "-"}
-                    {item.quantity}
+                    {item.action === "Check In"
+                      ? `+${item.quantity}`
+                      : item.action === "Transfer"
+                      ? `→${item.quantity}`
+                      : item.action === "Use" || item.action === "Check Out" || item.action === "Remove All"
+                      ? `-${item.quantity}`
+                      : `${item.quantity}`
+                    }
                   </Text>
                 </View>
                 <View style={styles.itemDetails}>
