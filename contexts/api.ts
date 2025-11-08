@@ -1,0 +1,10 @@
+/**
+ * Centralized API configuration.
+ *
+ * IMPORTANT: Update this IP address to match the machine running your backend server.
+ *
+ * - For local development with an emulator/simulator on the same machine, you can use 'http://localhost:3000/api' or 'http://127.0.0.1:3000/api'.
+ * - For testing on a physical device on the same Wi-Fi network, use your computer's local network IP address.
+ *   Example: 'http://192.168.1.47:3000/api'
+ */
+export const API_BASE_URL = 'http://127.0.0.1:3000/api';

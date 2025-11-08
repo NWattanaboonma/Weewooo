@@ -5,6 +5,12 @@ import React, {
   ReactNode,
   useMemo,
 } from "react";
+<<<<<<< Updated upstream
+=======
+import { useNotifications } from "./NotificationContext"; // Dependency to refresh notifications
+import { API_BASE_URL } from "./api"; // Import the centralized URL
+
+>>>>>>> Stashed changes
 
 export type ItemCategory = "Medication" | "Equipment" | "Supplies";
 export type HistoryAction =

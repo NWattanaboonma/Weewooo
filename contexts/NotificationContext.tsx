@@ -1,5 +1,11 @@
+<<<<<<< Updated upstream
 import React, { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+=======
+import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { API_BASE_URL } from "./api"; // Import the centralized URL
+
+>>>>>>> Stashed changes
 
 export type Notification = {
   id: number;
