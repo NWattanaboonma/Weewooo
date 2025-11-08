@@ -3,7 +3,7 @@ import React, {
   useContext,
   useState,
   ReactNode,
-  useMemo,
+  useEffect,
 } from "react";
 <<<<<<< Updated upstream
 =======
@@ -11,6 +11,11 @@ import { useNotifications } from "./NotificationContext"; // Dependency to refre
 import { API_BASE_URL } from "./api"; // Import the centralized URL
 
 >>>>>>> Stashed changes
+import { useNotifications } from "./NotificationContext"; // Dependency to refresh notifications
+
+// 1. API Configuration: *** UPDATE THIS WITH YOUR ACTUAL SERVER IP ***
+const API_BASE_URL = 'http://192.168.1.47:3000/api'; 
+// Example: http://192.168.1.100:3000/api
 
 export type ItemCategory = "Medication" | "Equipment" | "Supplies";
 export type HistoryAction =
@@ -20,11 +25,12 @@ export type HistoryAction =
   | "Remove All"
   | "Check Out";
 
+// Interface matches the data structure returned by the API's history endpoint
 export interface HistoryItem {
-  id: string;
+  id: string; // The history record ID
   itemId: string;
   itemName: string;
-  date: string;
+  date: string; // Formatted date string
   caseId: string;
   user: string;
   quantity: number;
@@ -32,8 +38,10 @@ export interface HistoryItem {
   category: ItemCategory;
 }
 
+// Interface matches the data structure returned by the API's inventory endpoint
 export interface InventoryItem {
-  id: string;
+  dbId: number;          // DB primary key (id)
+  id: string;            // barcode (item_id)
   name: string;
   category: ItemCategory;
   quantity: number;
@@ -43,253 +51,171 @@ export interface InventoryItem {
   location: string;
 }
 
+
 interface InventoryContextType {
   items: InventoryItem[];
-  history: HistoryItem[]; // Add history to context type
+  history: HistoryItem[];
   checkedIn: number;
   checkedOut: number;
   lowStockCount: number;
   recentSearches: string[];
-  addItem: (item: InventoryItem) => void;
-  updateItem: (id: string, updates: Partial<InventoryItem>) => void;
-  addRecentSearch: (search: string) => void;
+  
+  // New API-based functions
+  loadInitialData: () => Promise<void>; 
   logInventoryAction: (
     itemId: string,
     action: HistoryAction,
     quantity: number
-  ) => void; // New function to log actions
+  ) => Promise<boolean>; 
+  
+  addRecentSearch: (search: string) => void;
+  // addItem and updateItem are removed as they are now strictly backend operations
 }
 
 const InventoryContext = createContext<InventoryContextType | undefined>(
   undefined
 );
 
-const mockData: InventoryItem[] = [
-  {
-    id: "MED001",
-    name: "Epinephrine Auto-Injector",
-    category: "Medication",
-    quantity: 5,
-    lastScanned: "21/10/2025",
-    status: "In Stock",
-    expiryDate: "2024-10-21",
-    location: "Ambulance 1",
-  },
-  {
-    id: "MED002",
-    name: "Morphine 10mg",
-    category: "Medication",
-    quantity: 10,
-    lastScanned: "21/10/2025",
-    status: "In Stock",
-    expiryDate: "2027-01-07",
-    location: "Ambulance 1",
-  },
-  {
-    id: "MED003",
-    name: "Aspirin 325mg",
-    category: "Medication",
-    quantity: 20,
-    lastScanned: "21/10/2025",
-    status: "In Stock",
-    expiryDate: "2025-11-11",
-    location: "Ambulance 2",
-  },
-  {
-    id: "EQP001",
-    name: "Defibrillator AED",
-    category: "Equipment",
-    quantity: 2,
-    lastScanned: "21/10/2025",
-    status: "In Stock",
-    expiryDate: "2026-02-03",
-    location: "Ambulance Storage Room A",
-  },
-  {
-    id: "EQP002",
-    name: "Blood Pressure Monitor",
-    category: "Equipment",
-    quantity: 3,
-    lastScanned: "20/10/2025",
-    status: "Low Stock",
-    expiryDate: "2023-04-20",
-    location: "Storage Room A",
-  },
-  {
-    id: "SUP001",
-    name: "Gauze Pads 4x4",
-    category: "Supplies",
-    quantity: 50,
-    lastScanned: "21/10/2025",
-    status: "In Stock",
-    expiryDate: "2026-10-21",
-    location: "Cabinet 3",
-  },
-  {
-    id: "SUP002",
-    name: "Medical Gloves (Box)",
-    category: "Supplies",
-    quantity: 1,
-    lastScanned: "19/10/2025",
-    status: "Low Stock",
-    expiryDate: "2025-11-20",
-    location: "Cabinet 3",
-  },
-];
-
-// Initial dummy history data
-const dummyHistory: HistoryItem[] = [
-  {
-    id: "1",
-    itemId: "MED001",
-    itemName: "Epinephrine Auto-Injector",
-    date: "10/26/2023 10:30:26 AM",
-    caseId: "C12345",
-    user: "John Doe",
-    quantity: 5,
-    action: "Check Out",
-    category: "Medication",
-  },
-  {
-    id: "2",
-    itemId: "EQP001",
-    itemName: "Defibrillator AED",
-    date: "10/26/2024 11:51:42 AM",
-    caseId: "C12344",
-    user: "Jane Smith",
-    quantity: 1,
-    action: "Check In",
-    category: "Equipment",
-  },
-  {
-    id: "3",
-    itemId: "SUP001",
-    itemName: "Gauze Pads 4x4",
-    date: "10/26/2024 10:02:22 AM",
-    caseId: "C12343",
-    user: "John Doe",
-    quantity: 10,
-    action: "Check Out",
-    category: "Supplies",
-  },
-  {
-    id: "4",
-    itemId: "MED002",
-    itemName: "Morphine 10mg",
-    date: "10/26/2024 2:06:05 PM",
-    caseId: "C12342",
-    user: "Jane Smith",
-    quantity: 2,
-    action: "Check In",
-    category: "Medication",
-  },
-];
+// --- State and Data Loading ---
 
 export function InventoryProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<InventoryItem[]>(mockData);
-  const [history, setHistory] = useState<HistoryItem[]>(dummyHistory); // New state for history
-  const [recentSearches, setRecentSearches] = useState<string[]>([]); // State for recent searches
+  // 2. Initialize state with empty values (data will come from API)
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [checkedIn, setCheckedIn] = useState(0);
+  const [checkedOut, setCheckedOut] = useState(0);
+  const [lowStockCount, setLowStockCount] = useState(0);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  
+  // Get notification context to ensure alerts refresh after inventory changes
+  const { loadNotifications } = useNotifications(); 
 
-  const lowStockCount = items.filter(
-    (item) => item.status === "Low Stock"
-  ).length;
+  /**
+   * 3. Fetches all inventory items and history from the backend API.
+   * This replaces mock data initialization and useMemo calculations.
+   */
+  const loadInitialData = async () => {
+    try {
+      console.log("📥 Loading data from API...");
 
-  // Derive checkedIn and checkedOut from history using useMemo for performance
-  const { checkedIn, checkedOut } = useMemo(() => {
-    return history.reduce(
-      (acc, record) => {
-        if (record.action === "Check In") {
-          acc.checkedIn += record.quantity;
-        } else {
-          // Any other action is a form of check-out
-          acc.checkedOut += record.quantity;
-        }
-        return acc;
-      },
-      { checkedIn: 0, checkedOut: 0 }
-    );
-  }, [history]);
+      const [inventoryResponse, historyResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/inventory`),
+        fetch(`${API_BASE_URL}/history`)
+      ]);
 
-  const addItem = (item: InventoryItem) => {
-    setItems([...items, item]);
+      if (!inventoryResponse.ok) throw new Error("Failed loading inventory");
+      if (!historyResponse.ok) throw new Error("Failed loading history");
+
+      const inventoryData = await inventoryResponse.json();
+      const historyData = await historyResponse.json();
+
+      // ✅ Map backend inventory into React Native structure
+      const mappedItems: InventoryItem[] = inventoryData.items.map((item: any) => ({
+        dbId: item.id,
+        id: item.item_id,
+        name: item.name,
+        category: item.category,
+        quantity: item.quantity,
+        lastScanned: item.lastScanned,
+        status: item.status,
+        expiryDate: item.expiryDate,
+        location: item.location,
+      }));
+
+      setItems(mappedItems);
+      setHistory(historyData);
+
+      setCheckedIn(inventoryData.summary?.checkedIn ?? 0);
+      setCheckedOut(inventoryData.summary?.checkedOut ?? 0);
+      setLowStockCount(inventoryData.summary?.lowStockCount ?? 0);
+
+      console.log("✅ Inventory loaded:", mappedItems.length);
+      console.log("✅ History loaded:", historyData.length);
+
+      loadNotifications();
+
+    } catch (e: any) {
+      console.error("❌ Error loading initial data: ", e);
+    }
   };
 
-  const updateItem = (id: string, updates: Partial<InventoryItem>) => {
-    setItems(
-      items.map((item) => (item.id === id ? { ...item, ...updates } : item))
-    );
-  };
 
-  // New function to log inventory actions and update item quantity
+  // Run on component mount to load data
+  useEffect(() => {
+    loadInitialData();
+  }, []); 
+
+  // --- Utility Function (Client-side logic remains) ---
+
   const addRecentSearch = (search: string) => {
-    // Don't add empty searches
     if (!search.trim()) return;
 
     setRecentSearches((prevSearches) => {
-      // Remove the search if it already exists (to move it to the front)
       const filteredSearches = prevSearches.filter((s) => s !== search);
-      // Add the new search to the beginning and limit to 5 recent searches
       return [search, ...filteredSearches].slice(0, 5);
     });
   };
 
-  const logInventoryAction = (
+  // --- 4. API Action Functions (Replaces local logic) ---
+
+  /**
+   * Logs an inventory action to the backend API via a POST request.
+   * The API handles all quantity updates, history recording, and status determination.
+   */
+  const logInventoryAction = async (
     itemId: string,
     action: HistoryAction,
     quantity: number
-  ) => {
-    const itemToUpdate = items.find((item) => item.id === itemId);
-    if (!itemToUpdate) {
-      console.warn(`Item with ID ${itemId} not found for logging action.`);
-      return;
+  ): Promise<boolean> => {
+    try {
+      // NOTE: Client generates a dummy caseId and user, which the server will use.
+      const payload = {
+          itemId,
+          action,
+          quantity,
+          caseId: `C${Math.floor(Math.random() * 90000) + 10000}`, 
+          user: "Current User",
+      };
+      
+      const response = await fetch(`${API_BASE_URL}/action/log`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: response.statusText }));
+        console.error("Server error logging action:", errorData.error);
+        alert(`Failed to log action: ${errorData.error || response.statusText}`);
+        return false;
+      }
+
+      // Action succeeded: Refresh all data from the database
+      await loadInitialData(); 
+      return true;
+
+    } catch (e) {
+      console.error("Network or API call failed:", e);
+      alert("Failed to connect to the server. Please check your network configuration.");
+      return false;
     }
-
-    // 1. Create a new history record
-    const newHistoryItem: HistoryItem = {
-      id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, // Generate a unique ID
-      itemId: itemToUpdate.id,
-      itemName: itemToUpdate.name,
-      date: new Date().toLocaleString(), // Current date and time
-      caseId: `C${Math.floor(Math.random() * 90000) + 10000}`, // Dummy case ID
-      user: "Current User", // Placeholder for actual user
-      quantity,
-      action,
-      category: itemToUpdate.category,
-    };
-    setHistory((prevHistory) => [newHistoryItem, ...prevHistory]); // Add new record to the beginning
-
-    // 2. Update the item's quantity and status
-    const currentQuantity = itemToUpdate.quantity;
-    let updatedQuantity =
-      action === "Check In"
-        ? currentQuantity + quantity
-        : currentQuantity - quantity; // All non-'Check In' actions reduce quantity
-    updatedQuantity = Math.max(0, updatedQuantity); // Ensure quantity doesn't go below zero
-
-    let newStatus: "In Stock" | "Low Stock" | "Out of Stock" = "In Stock";
-    if (updatedQuantity <= 0) newStatus = "Out of Stock";
-    else if (updatedQuantity < 5) newStatus = "Low Stock"; // Example threshold
-
-    updateItem(itemId, {
-      quantity: updatedQuantity,
-      status: newStatus,
-      lastScanned: new Date().toLocaleDateString(),
-    });
   };
-
+  
+  // 5. Context Value Update: Removed addItem and updateItem
   return (
     <InventoryContext.Provider
       value={{
         items,
-        history, // Provide history state
+        history, 
         checkedIn,
         checkedOut,
         lowStockCount,
         recentSearches,
-        addItem,
-        updateItem,
+        loadInitialData,
         addRecentSearch,
-        logInventoryAction, // Provide the new function
+        logInventoryAction,
       }}
     >
       {children}
