@@ -180,9 +180,8 @@ export default function HistoryScreen() {
                   <Text style={styles.itemDetailText}>Date: {item.date}</Text>
                   <Text style={styles.itemDetailText}>
                     Case ID: {item.caseId} • Item ID: {item.itemId}
-                  </Text>
-                  <Text style={styles.itemDetailText}>
-                    Action: {item.action}
+                  </Text><Text style={styles.itemDetailText}>
+                    Action: {item.action} by {item.user}
                   </Text>
                 </View>
               </TouchableOpacity>

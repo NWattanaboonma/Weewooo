@@ -415,7 +415,8 @@ export default function InventoryScreen() {
                         logInventoryAction(
                           item.id,
                           "Use",
-                          getQuantityForUse(item.id)
+                          getQuantityForUse(item.id),
+                          "Nurse Jackie" // Pass the user's name
                         )
                       }
                       disabled={
@@ -438,7 +439,8 @@ export default function InventoryScreen() {
                         logInventoryAction(
                           item.id,
                           "Transfer",
-                          getQuantityForUse(item.id)
+                          getQuantityForUse(item.id),
+                          "Nurse Jackie" // Pass the user's name
                         )
                       }
                       disabled={
@@ -455,7 +457,12 @@ export default function InventoryScreen() {
                         item.quantity <= 0 && styles.disabledButton, // Disable if no items to remove
                       ]}
                       onPress={() =>
-                        logInventoryAction(item.id, "Remove All", item.quantity)
+                        logInventoryAction(
+                          item.id,
+                          "Remove All",
+                          item.quantity,
+                          "Nurse Jackie" // Pass the user's name
+                        )
                       }
                       disabled={item.quantity <= 0}
                     >

@@ -58,7 +58,8 @@ interface InventoryContextType {
   logInventoryAction: (
     itemId: string,
     action: HistoryAction,
-    quantity: number
+    quantity: number,
+    user: string // Added user parameter
   ) => Promise<boolean>; 
   
   addRecentSearch: (search: string) => void;
@@ -158,7 +159,8 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
   const logInventoryAction = async (
     itemId: string,
     action: HistoryAction,
-    quantity: number
+    quantity: number,
+    user: string // Accept user as an argument
   ): Promise<boolean> => {
     try {
       // NOTE: Client generates a dummy caseId and user, which the server will use.
@@ -166,8 +168,8 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           itemId,
           action,
           quantity,
-          caseId: `C${Math.floor(Math.random() * 90000) + 10000}`, 
-          user: "Current User",
+          caseId: `C${Math.floor(Math.random() * 90000) + 10000}`,
+          user: user, // Use the passed user
       };
       
       const response = await fetch(`${API_BASE_URL}/action/log`, {
