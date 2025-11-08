@@ -415,8 +415,7 @@ export default function InventoryScreen() {
                         logInventoryAction(
                           item.id,
                           "Use",
-                          getQuantityForUse(item.id),
-                          "Nurse Jackie" // Pass the user's name
+                          getQuantityForUse(item.id)
                         )
                       }
                       disabled={
@@ -439,8 +438,7 @@ export default function InventoryScreen() {
                         logInventoryAction(
                           item.id,
                           "Transfer",
-                          getQuantityForUse(item.id),
-                          "Nurse Jackie" // Pass the user's name
+                          getQuantityForUse(item.id)
                         )
                       }
                       disabled={
@@ -460,8 +458,7 @@ export default function InventoryScreen() {
                         logInventoryAction(
                           item.id,
                           "Remove All",
-                          item.quantity,
-                          "Nurse Jackie" // Pass the user's name
+                          item.quantity
                         )
                       }
                       disabled={item.quantity <= 0}

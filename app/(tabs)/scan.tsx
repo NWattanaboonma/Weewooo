@@ -56,7 +56,7 @@ export default function ScanScreen() {
     // Log action directly (auto-submit)
     try {
       // Use the currently selected action (Check In or Check Out)
-      logInventoryAction(normalized, actionType, 1, "Paramedic Sam");
+      logInventoryAction(normalized, actionType, 1);
     } catch (e) {
       // safe fallback if context fn not available
       console.warn("logInventoryAction failed", e);

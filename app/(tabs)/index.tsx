@@ -12,13 +12,22 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
-  const { checkedIn, checkedOut, lowStockCount } = useInventory();
+  const {
+    checkedIn,
+    checkedOut,
+    lowStockCount,
+    currentUser,
+    setCurrentUser,
+  } = useInventory();
   const router = useRouter();
 
   return (
     <View style={styles.container}>
       <Header />
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <Text style={styles.currentUserText}>
+          Current User: <Text style={{ fontWeight: '700' }}>{currentUser}</Text>
+        </Text>
         <View style={styles.statsContainer}>
           <View style={[styles.statCard, styles.checkedInCard]}>
             <Text style={styles.statNumber}>{checkedIn}</Text>
@@ -58,6 +67,24 @@ export default function HomeScreen() {
           <IconSymbol name="chevron.right" size={20} color="#FFFFFF" />
         </TouchableOpacity>
 
+        <Text style={styles.sectionTitle}>Switch User (Demo)</Text>
+        <View style={styles.userSwitcher}>
+          <TouchableOpacity
+            style={styles.userButton}
+            onPress={() => setCurrentUser('Paramedic Sam')}>
+            <Text style={styles.userButtonText}>Login as Sam</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.userButton}
+            onPress={() => setCurrentUser('Nurse Jackie')}>
+            <Text style={styles.userButtonText}>Login as Jackie</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.userButton}
+            onPress={() => setCurrentUser('Dr. Hart')}>
+            <Text style={styles.userButtonText}>Login as Dr. Hart</Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.sectionTitle}>Recent Activity</Text>
         <View style={styles.emptyState}>
           <IconSymbol name="clock" size={64} color="#D1D5DB" />
@@ -76,6 +103,12 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
+  },
+  currentUserText: {
+    fontSize: 16,
+    color: '#4B5563',
+    textAlign: 'center',
+    marginBottom: 20,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -174,5 +207,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#9CA3AF',
     marginTop: 16,
+  },
+  userSwitcher: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 24,
+  },
+  userButton: {
+    backgroundColor: '#E5E7EB',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+  },
+  userButtonText: {
+    color: '#374151',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });

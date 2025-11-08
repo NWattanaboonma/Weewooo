@@ -97,23 +97,24 @@ INSERT INTO inventory_history
     (item_fk, item_id, item_name, action, quantity, action_date, case_id, user, category)
 VALUES
     -- Record 1: MED001 - Check Out 5 units
-    ((SELECT id FROM inventory_item WHERE item_id = 'MED001'), 'MED001', 'Epinephrine Auto-Injector', 'Check Out', 5, '2023-10-26 10:30:26', 'C12345', 'John Doe', 'Medication'),
+    ((SELECT id FROM inventory_item WHERE item_id = 'MED001'), 'MED001', 'Epinephrine Auto-Injector', 'Check Out', 5, '2023-10-26 10:30:26', 'C12345', 'Paramedic Sam', 'Medication'),
     
     -- Record 2: EQP001 - Check In 1 unit
-    ((SELECT id FROM inventory_item WHERE item_id = 'EQP001'), 'EQP001', 'Defibrillator AED', 'Check In', 1, '2024-10-26 11:51:42', 'C12344', 'Jane Smith', 'Equipment'),
+    ((SELECT id FROM inventory_item WHERE item_id = 'EQP001'), 'EQP001', 'Defibrillator AED', 'Check In', 1, '2024-10-26 11:51:42', 'C12344', 'Dr. Hart', 'Equipment'),
     
     -- Record 3: SUP001 - Check Out 10 units
-    ((SELECT id FROM inventory_item WHERE item_id = 'SUP001'), 'SUP001', 'Gauze Pads 4x4', 'Check Out', 10, '2024-10-26 10:02:22', 'C12343', 'John Doe', 'Supplies'),
+    ((SELECT id FROM inventory_item WHERE item_id = 'SUP001'), 'SUP001', 'Gauze Pads 4x4', 'Check Out', 10, '2024-10-26 10:02:22', 'C12343', 'Nurse Jackie', 'Supplies'),
     
     -- Record 4: MED002 - Check In 2 units
-    ((SELECT id FROM inventory_item WHERE item_id = 'MED002'), 'MED002', 'Morphine 10mg', 'Check In', 2, '2024-10-26 14:06:05', 'C12342', 'Jane Smith', 'Medication');
+    ((SELECT id FROM inventory_item WHERE item_id = 'MED002'), 'MED002', 'Morphine 10mg', 'Check In', 2, '2024-10-26 14:06:05', 'C12342', 'Dr. Hart', 'Medication');
 
 -- Add one more action (e.g., a "Use" action) not in the mock to show the 'Use' action type:
-INSERT INTO inventory_history
-    (item_fk, item_id, item_name, action, quantity, action_date, case_id, user, category)
-VALUES
-    ((SELECT id FROM inventory_item WHERE item_id = 'MED003'), 'MED003', 'Aspirin 325mg', 'Use', 1, '2024-11-04 09:30:00', 'C12341', 'Current User', 'Medication');
-    
+-- Test the system.
+-- INSERT INTO inventory_history
+--     (item_fk, item_id, item_name, action, quantity, action_date, case_id, user, category)
+-- VALUES
+--     ((SELECT id FROM inventory_item WHERE item_id = 'MED003'), 'MED003', 'Aspirin 325mg', 'Use', 1, '2024-11-04 09:30:00', 'C12341', 'Current User', 'Medication');
+--     
 -- -----------------------------------------------------------
 -- 3. Notification Log (based on mockNotifications)
 -- -----------------------------------------------------------

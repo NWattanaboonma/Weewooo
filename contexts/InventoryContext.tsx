@@ -52,18 +52,18 @@ interface InventoryContextType {
   checkedOut: number;
   lowStockCount: number;
   recentSearches: string[];
+  currentUser: string; // Add current user to the context
   
   // New API-based functions
   loadInitialData: () => Promise<void>; 
   logInventoryAction: (
     itemId: string,
     action: HistoryAction,
-    quantity: number,
-    user: string // Added user parameter
+    quantity: number
   ) => Promise<boolean>; 
   
   addRecentSearch: (search: string) => void;
-  // addItem and updateItem are removed as they are now strictly backend operations
+  setCurrentUser: (user: string) => void; // Function to change the user
 }
 
 const InventoryContext = createContext<InventoryContextType | undefined>(
@@ -80,6 +80,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
   const [checkedOut, setCheckedOut] = useState(0);
   const [lowStockCount, setLowStockCount] = useState(0);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [currentUser, setCurrentUser] = useState<string>("Paramedic Sam"); // Default user
   
   // Get notification context to ensure alerts refresh after inventory changes
   const { loadNotifications } = useNotifications(); 
@@ -159,17 +160,16 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
   const logInventoryAction = async (
     itemId: string,
     action: HistoryAction,
-    quantity: number,
-    user: string // Accept user as an argument
+    quantity: number
   ): Promise<boolean> => {
     try {
-      // NOTE: Client generates a dummy caseId and user, which the server will use.
+      // The user is now taken from the context state instead of being passed as an argument.
       const payload = {
           itemId,
           action,
           quantity,
           caseId: `C${Math.floor(Math.random() * 90000) + 10000}`,
-          user: user, // Use the passed user
+          user: currentUser, // Use the user from the context state
       };
       
       const response = await fetch(`${API_BASE_URL}/action/log`, {
@@ -208,9 +208,11 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
         checkedOut,
         lowStockCount,
         recentSearches,
+        currentUser,
         loadInitialData,
         addRecentSearch,
         logInventoryAction,
+        setCurrentUser,
       }}
     >
       {children}
