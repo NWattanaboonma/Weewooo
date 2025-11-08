@@ -5,17 +5,10 @@ import React, {
   ReactNode,
   useEffect,
 } from "react";
-<<<<<<< Updated upstream
-=======
 import { useNotifications } from "./NotificationContext"; // Dependency to refresh notifications
-import { API_BASE_URL } from "./api"; // Import the centralized URL
+import { API_BASE_URL } from "./api"; // Import the centralized API URL
 
->>>>>>> Stashed changes
-import { useNotifications } from "./NotificationContext"; // Dependency to refresh notifications
-
-// 1. API Configuration: *** UPDATE THIS WITH YOUR ACTUAL SERVER IP ***
-const API_BASE_URL = 'http://192.168.1.47:3000/api'; 
-// Example: http://192.168.1.100:3000/api
+// API configuration is now managed in api.ts
 
 export type ItemCategory = "Medication" | "Equipment" | "Supplies";
 export type HistoryAction =

@@ -1,10 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
-// AsyncStorage is removed as data is now managed by the database
-// import AsyncStorage from "@react-native-async-storage/async-storage"; 
+import { API_BASE_URL } from "./api"; // Import the centralized API URL
 
-// 1. API Configuration: Use the same base URL as InventoryContext
-const API_BASE_URL = 'http://192.168.1.47:3000/api'; 
-// Example: http://192.168.1.100:3000/api
+// API configuration is now managed in api.ts
 
 export type Notification = {
   id: number; // Notification log ID
