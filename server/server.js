@@ -150,9 +150,30 @@ app.post('/api/action/log', async (req, res) => {
                 `Quantity is ${updatedItem.quantity}, which is at or below the minimum of ${minQty}.`
             ]);
 
-            // Note: Email sending for low stock is not included here to keep the transaction fast.
-            // This can be handled by a separate process if needed.
             console.log(`✅ Low stock notification logged for item ${itemId}.`);
+
+            // Send low stock email alert
+            await sendEmailJS({
+                service_id: 'service_o9baz0e',
+                template_id: 'template_k05so3m', // FIX: Replace this placeholder with your actual Low Stock template ID from EmailJS.
+                user_id: 'KetRjtX41DqNLAL84',
+                accessToken: 'zAQUIbBQ4tu2YQdgBCbCJ',
+                template_params: {
+                    title: `Low Stock Alert: ${updatedItem.name} (${itemId})`,
+                    name: 'Q-Medic Bot',
+                    time: new Date().toLocaleString(),
+                    item: updatedItem.name,
+                    item_id: itemId,
+                    category: updatedItem.category,
+                    location: updatedItem.location,
+                    quantity: updatedItem.quantity,
+                    // Low stock alerts don't typically have expiry/daysLeft, but you can add if needed
+                    expiry_date: formatDateForFrontend(updatedItem.expiry_date),
+                    daysLeft: 'N/A' 
+                }
+            });
+
+
         }
 
         await connection.commit();
@@ -251,10 +272,19 @@ app.post('/api/notifications/read/:id', async (req, res) => {
  cron.schedule('* * * * *', async () => {
         try {
             console.log('⏰ Running daily expiry check...');
+            // Fetch items and any existing expiry warnings for them to prevent duplicates
             const [items] = await pool.query(`
-                SELECT id, item_id, name, category, location, expiry_date, quantity
-                FROM inventory_item
-                WHERE expiry_date IS NOT NULL
+                SELECT 
+                    i.id, i.item_id, i.name, i.category, i.location, i.expiry_date, i.quantity,
+                    GROUP_CONCAT(nl.alert_type) AS sent_alerts
+                FROM 
+                    inventory_item i
+                LEFT JOIN 
+                    notification_log nl ON i.id = nl.item_fk AND nl.alert_type LIKE 'Expiry%'
+                WHERE 
+                    i.expiry_date IS NOT NULL
+                GROUP BY
+                    i.id
             `);
 
             const today = new Date();
@@ -262,9 +292,10 @@ app.post('/api/notifications/read/:id', async (req, res) => {
             for (const item of items) {
                 const expiry = new Date(item.expiry_date);
                 const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+                const sentAlerts = item.sent_alerts ? item.sent_alerts.split(',') : [];
 
             // New check: Send an alert exactly 15 days before expiry.
-            if (daysLeft === 15) {
+            if (daysLeft === 15 && !sentAlerts.includes('15-Day Expiry Warning')) {
                 console.log(`Item ${item.item_id} is expiring in 15 days. Sending email.`);
                 const ok = await sendEmailJS({
                     service_id: 'service_o9baz0e',
@@ -290,14 +321,14 @@ app.post('/api/notifications/read/:id', async (req, res) => {
                     // Log this notification to the database so it appears in the app
                     await pool.query(`
                         INSERT IGNORE INTO notification_log
-                        (item_fk, alert_type, item_id_at_alert, item_name, location, expiry_date_at_alert)
-                        VALUES (?, 'Expiry Warning', ?, ?, ?, ?)`,
-                        [item.id, item.item_id, item.name, item.location, item.expiry_date]
+                        (item_fk, alert_type, item_id_at_alert, item_name, location, expiry_date_at_alert, details)
+                        VALUES (?, '15-Day Expiry Warning', ?, ?, ?, ?, ?)`,
+                        [item.id, item.item_id, item.name, item.location, item.expiry_date, `Expires in ${daysLeft} days`]
                     );
                 }
             }
 
-            if (daysLeft > 0 && daysLeft <= 7) {
+            if (daysLeft > 0 && daysLeft <= 7 && !sentAlerts.includes('7-Day Expiry Warning')) {
                 console.log(`Item ${item.item_id} is expiring in ${daysLeft} days. Sending email.`);
                 const ok = await sendEmailJS({
                     service_id: 'service_o9baz0e',
@@ -305,7 +336,7 @@ app.post('/api/notifications/read/:id', async (req, res) => {
                     user_id: 'KetRjtX41DqNLAL84',
                     accessToken: 'zAQUIbBQ4tu2YQdgBCbCJ', // Make sure this is your correct private key
                     template_params: {
-                        title: `${item.name} (${item.item_id})`,
+                        title: `Expiry Warning: ${item.name} (${item.item_id})`,
                         name: 'Q-Medic Bot',
                         time: new Date().toLocaleString(),
                         item: item.name,
@@ -322,9 +353,9 @@ app.post('/api/notifications/read/:id', async (req, res) => {
                     console.log(`✅ Expiry email sent for ${item.item_id}`);
                     await pool.query(`
                         INSERT IGNORE INTO notification_log
-                        (item_fk, alert_type, item_id_at_alert, item_name, location, expiry_date_at_alert)
-                        VALUES (?, 'Expiry Warning', ?, ?, ?, ?)`,
-                        [item.id, item.item_id, item.name, item.location, item.expiry_date]
+                        (item_fk, alert_type, item_id_at_alert, item_name, location, expiry_date_at_alert, details)
+                        VALUES (?, '7-Day Expiry Warning', ?, ?, ?, ?, ?)`,
+                        [item.id, item.item_id, item.name, item.location, item.expiry_date, `Expires in ${daysLeft} days`]
                     );
                 } else {
                     console.error(`❌ Failed to send expiry email for ${item.item_id}`);
@@ -338,29 +369,24 @@ app.post('/api/notifications/read/:id', async (req, res) => {
 
     async function sendEmailJS({ service_id, template_id, user_id, accessToken, template_params }) {
         try {
-            // CORRECTED: The endpoint is /api/v1.0/email/send, but it requires the accessToken for server-side calls.
-            const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+            const response = await axios.post('https://api.emailjs.com/api/v1.0/email/send', {
                 service_id,
                 template_id,
                 user_id,
-                accessToken, // This is your Private Key, required for server-side calls
-                template_params
-            })
+                accessToken,
+                template_params,
+            }, {
+                headers: { 'Content-Type': 'application/json' }
             });
-            const txt = await res.text();
-            if (!res.ok) {
-            console.error('❌ EmailJS REST API failed:', res.status, txt);
-            return false;
+    
+            if (response.status === 200) {
+                console.log('✅ EmailJS ok:', response.data);
+                return true;
             }
-            console.log('✅ EmailJS ok:', txt);
-            return true;
-        } catch (e) {
-            console.error('❌ EmailJS error:', e);
-            return false;
+        } catch (error) {
+            console.error('❌ EmailJS error:', error.response ? error.response.data : error.message);
         }
+        return false;
         }
 
 
