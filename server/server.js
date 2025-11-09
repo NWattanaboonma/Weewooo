@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs').promises; // Node.js File System module (for writing to api.ts)
 const path = require('path');     // Node.js Path module (to locate api.ts)
+const cron = require('node-cron'); // For scheduled tasks
+const axios = require('axios');   // For making HTTP requests (to EmailJS)
 
 const app = express();
 app.use(cors());
@@ -95,7 +97,7 @@ app.post('/api/action/log', async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        // 1. Get Item Data
+        // 1. Get Item Data and its minimum quantity threshold
         const [items] = await connection.query('SELECT id, name, category, quantity FROM inventory_item WHERE item_id = ?', [itemId]);
         if (items.length === 0) throw new Error(`Item ID ${itemId} not found.`);
         const item = items[0];
@@ -127,8 +129,31 @@ app.post('/api/action/log', async (req, res) => {
             item.id, itemId, item.name, action, quantity, caseId, user, item.category // Removed the extra 'quantity' parameter
         ]);
 
-        // TODO: (SERVER SIDE FEATURE) Add logic here to check if the new quantity <= min_quantity 
-        //       or if a transaction triggers an expiry alert, and then call addNotification API logic.
+        // 5. Check for Low Stock and Send Notification
+        const [itemDetails] = await connection.query('SELECT quantity, min_quantity, name, location, expiry_date FROM inventory_item WHERE id = ?', [item.id]);
+        const updatedItem = itemDetails[0];
+        const minQty = updatedItem.min_quantity;
+        const actionsThatTriggerAlert = ["Use", "Check Out", "Remove All"];
+
+        if (updatedItem.quantity <= minQty && actionsThatTriggerAlert.includes(action)) {
+            const insertNotifQuery = `
+                INSERT INTO notification_log 
+                    (item_fk, alert_type, item_id_at_alert, item_name, location, expiry_date_at_alert, details)
+                VALUES (?, 'Low Stock', ?, ?, ?, ?, ?);
+            `;
+            await connection.query(insertNotifQuery, [
+                item.id,
+                itemId,
+                updatedItem.name,
+                updatedItem.location,
+                updatedItem.expiry_date,
+                `Quantity is ${updatedItem.quantity}, which is at or below the minimum of ${minQty}.`
+            ]);
+
+            // Note: Email sending for low stock is not included here to keep the transaction fast.
+            // This can be handled by a separate process if needed.
+            console.log(`✅ Low stock notification logged for item ${itemId}.`);
+        }
 
         await connection.commit();
         res.status(200).send({ message: 'Action logged and inventory updated.', newQuantity: updatedQuantity });
@@ -218,6 +243,112 @@ app.post('/api/notifications/read/:id', async (req, res) => {
         res.status(500).send({ message: 'Failed to update notification status.' });
     }
 });
+
+/**
+ * Helper function to send emails via EmailJS Web API.
+ * This is more reliable on a server than a client-side SDK.
+ */
+async function sendEmailJS({ service_id, template_id, user_id, accessToken, template_params }) {
+    try {
+        const response = await axios.post('https://api.emailjs.com/api/v1.0/email/send', {
+            service_id,
+            template_id,
+            user_id,
+            accessToken,
+            template_params,
+        }, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (response.status === 200) {
+            console.log('✅ EmailJS ok:', response.data);
+            return true;
+        }
+    } catch (error) {
+        console.error('❌ EmailJS error:', error.response ? error.response.data : error.message);
+    }
+    return false;
+}
+
+/**
+ * Scheduled task to check for expiring items daily.
+ */
+// Set to run once daily at 8:00 AM in the Bangkok timezone.
+// You can change the time by modifying the cron string (e.g., '0 22 * * *' for 10 PM).
+cron.schedule('0 8 * * *', async () => {
+    try {
+        console.log('⏰ Running daily expiry check...');
+        // Fetch items and any existing expiry warnings for them
+        const [items] = await pool.query(`
+            SELECT 
+                i.id, i.item_id, i.name, i.category, i.location, i.expiry_date, i.quantity,
+                GROUP_CONCAT(nl.alert_type) AS sent_alerts
+            FROM 
+                inventory_item i
+            LEFT JOIN 
+                notification_log nl ON i.id = nl.item_fk AND nl.alert_type LIKE 'Expiry%'
+            WHERE 
+                i.expiry_date IS NOT NULL
+            GROUP BY
+                i.id
+        `);
+
+        const today = new Date();
+
+        for (const item of items) {
+            const expiry = new Date(item.expiry_date);
+            const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+            const sentAlerts = item.sent_alerts ? item.sent_alerts.split(',') : [];
+
+            // Check: Send an alert exactly 15 days before expiry, but only once.
+            if (daysLeft === 15 && !sentAlerts.includes('15-Day Expiry Warning')) {
+                console.log(`Item ${item.item_id} is expiring in 15 days. Sending email.`);
+                // Logic to send email and log notification...
+                await pool.query(`
+                    INSERT IGNORE INTO notification_log
+                    (item_fk, alert_type, item_id_at_alert, item_name, location, expiry_date_at_alert, details)
+                    VALUES (?, '15-Day Expiry Warning', ?, ?, ?, ?, ?)`,
+                    [item.id, item.item_id, item.name, item.location, item.expiry_date, `Expires in ${daysLeft} days`]
+                );
+            }
+
+            // Check: Send an alert within the 7-day window, but only once.
+            if (daysLeft > 0 && daysLeft <= 7 && !sentAlerts.includes('7-Day Expiry Warning')) {
+                console.log(`Item ${item.item_id} is expiring in ${daysLeft} days. Sending email.`);
+                const ok = await sendEmailJS({
+                    service_id: 'service_o9baz0e', // Replace with your actual service ID
+                    template_id: 'template_rydjjvb', // Replace with your Expiry template ID
+                    user_id: 'KetRjtX41DqNLAL84', // Replace with your User ID
+                    accessToken: 'zAQUIbBQ4tu2YQdgBCbCJ', // Replace with your Access Token
+                    template_params: {
+                        title: `Expiry Warning: ${item.name} (${item.item_id})`,
+                        name: 'Q-Medic Bot',
+                        time: new Date().toLocaleString(),
+                        item: item.name,
+                        item_id: item.item_id,
+                        category: item.category,
+                        location: item.location,
+                        quantity: item.quantity,
+                        expiry_date: formatDateForFrontend(item.expiry_date),
+                        daysLeft: daysLeft
+                    }
+                });
+
+                if (ok) {
+                    console.log(`✅ Expiry email sent for ${item.item_id}`);
+                    await pool.query(`
+                        INSERT IGNORE INTO notification_log
+                        (item_fk, alert_type, item_id_at_alert, item_name, location, expiry_date_at_alert, details)
+                        VALUES (?, '7-Day Expiry Warning', ?, ?, ?, ?, ?)`,
+                        [item.id, item.item_id, item.name, item.location, item.expiry_date, `Expires in ${daysLeft} days`]
+                    );
+                }
+            }
+        }
+    } catch (err) {
+        console.error('⚠️ Cron job error:', err.message);
+    }
+}, { timezone: 'Asia/Bangkok' });
 
 // --- Start Server ---
 app.listen(PORT, '0.0.0.0', async () => { // <-- Make the callback async
