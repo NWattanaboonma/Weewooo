@@ -77,7 +77,7 @@ CREATE TABLE notification_log (
 INSERT INTO inventory_item 
     (item_id, name, category, quantity, min_quantity, expiry_date, location, last_scanned)
 VALUES
-    ('MED001', 'Epinephrine Auto-Injector', 'Medication', 5, 5, '2024-10-21', 'Ambulance 1', '2025-10-21'),
+    ('MED001', 'Epinephrine Auto-Injector', 'Medication', 5, 5, '2025-9-29', 'Ambulance 1', '2025-10-21'),
     ('MED002', 'Morphine 10mg', 'Medication', 10, 5, '2027-01-07', 'Ambulance 1', '2025-10-21'),
     ('MED003', 'Aspirin 325mg', 'Medication', 20, 5, '2025-11-11', 'Ambulance 2', '2025-10-21'),
     ('EQP001', 'Defibrillator AED', 'Equipment', 2, 5, '2026-02-03', 'Ambulance Storage Room A', '2025-10-21'),
@@ -125,7 +125,7 @@ VALUES
     -- Unread Notifications (1-5) - Set as Expiry Warning or Low Stock
     ((SELECT id FROM inventory_item WHERE item_id = 'MED002'), 'Expiry Warning', 'MED002', 'Morphine 10mg', 'Ambulance 1', '2025-10-25', FALSE),
     ((SELECT id FROM inventory_item WHERE item_id = 'SUP001'), 'Expiry Warning', 'SUP001', 'Gauze Pads 4x4', 'Ambulance 2', '2025-10-28', FALSE),
-    ((SELECT id FROM inventory_item WHERE item_id = 'MED003'), 'Expiry Warning', 'MED003', 'Aspirin 325mg', 'Storage Room A', '2025-10-30', FALSE),
+    ((SELECT id FROM inventory_item WHERE item_id = 'MED003'), 'Expiry Warning', 'MED003', 'Aspirin 325mg', 'Storage Room A', '2025-12-30', FALSE),
     ((SELECT id FROM inventory_item WHERE item_id = 'SUP002'), 'Low Stock', 'SUP002', 'Medical Gloves (Box)', 'Cabinet 3', '2025-10-27', FALSE),
     ((SELECT id FROM inventory_item WHERE item_id = 'EQP001'), 'Low Stock', 'EQP001', 'Defibrillator AED', 'Ambulance 1', '2025-10-26', FALSE), -- EQP001 is Low Stock based on quantity 2 < min_quantity 5
     
@@ -133,3 +133,6 @@ VALUES
     ((SELECT id FROM inventory_item WHERE item_id = 'MED001'), 'Expiry Warning', 'MED001', 'Epinephrine Auto-Injector', 'Ambulance 1', '2025-11-10', TRUE),
     ((SELECT id FROM inventory_item WHERE item_id = 'EQP002'), 'Expired', 'EQP002', 'Blood Pressure Monitor', 'Ambulance 2', '2025-11-15', TRUE), -- Set as Expired since item_item is expired
     ((SELECT id FROM inventory_item WHERE item_id = 'SUP001'), 'Low Stock', 'SUP001', 'Gauze Pads 4x4', 'Storage Room A', '2025-11-20', TRUE);
+    
+ALTER TABLE QMedicDB.notification_log
+ADD COLUMN details VARCHAR(255) NULL;
