@@ -6,6 +6,11 @@ const path = require('path');     // Node.js Path module (to locate api.ts)
 const cron = require('node-cron'); // For scheduled tasks
 const axios = require('axios');   // For making HTTP requests (to EmailJS)
 
+// --- NEW --- Dependencies for file export
+const { Parser } = require('json2csv');
+const ExcelJS = require('exceljs');
+const PDFDocument = require('pdfkit');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -14,7 +19,7 @@ const PORT = 3000;
 
 // MySQL connection pool configuration
 const pool = mysql.createPool({
-    host: '127.0.0.1',
+    host: 'localhost',
     user: 'root',
     password: '1234',
     database: 'QMedicDB'
@@ -53,6 +58,25 @@ const mapToInventoryItem = (item) => {
         location: item.location,
     };
 };
+
+// --- NEW ---
+// HELPER FUNCTION: Get all inventory data for export
+// This uses async/await to match the existing code style
+const fetchInventory = async () => {
+    // Query the main inventory table
+    const query = 'SELECT item_id, name, category, quantity, min_quantity, expiry_date, location FROM inventory_item';
+    
+    const [rows] = await pool.query(query); 
+    
+    // Format dates consistently using your existing helper
+    const data = rows.map(item => ({
+        ...item,
+        expiry_date: formatDateForFrontend(item.expiry_date) // Use existing utility
+    }));
+    
+    return data;
+};
+
 
 /**
  * GET /api/inventory
@@ -264,6 +288,129 @@ app.post('/api/notifications/read/:id', async (req, res) => {
         res.status(500).send({ message: 'Failed to update notification status.' });
     }
 });
+
+
+// --- NEW --- Export Routes
+// =============================================
+
+/**
+ * GET /api/export/csv
+ * Generates and sends a CSV file of the inventory.
+ */
+app.get('/api/export/csv', async (req, res) => {
+  try {
+    const inventoryData = await fetchInventory();
+    
+    // Define the fields/columns
+    const fields = ['item_id', 'name', 'category', 'quantity', 'min_quantity', 'expiry_date', 'location'];
+    const json2csvParser = new Parser({ fields });
+    const csv = json2csvParser.parse(inventoryData);
+
+    res.header('Content-Type', 'text/csv');
+    res.attachment('inventory.csv');
+    res.send(csv);
+
+  } catch (error) {
+    console.error('CSV Export Error:', error);
+    res.status(500).send('Error generating CSV file');
+  }
+});
+
+/**
+ * GET /api/export/excel
+ * Generates and sends an Excel (.xlsx) file of the inventory.
+ */
+app.get('/api/export/excel', async (req, res) => {
+  try {
+    const inventoryData = await fetchInventory();
+    
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Inventory');
+
+    // Define columns
+    worksheet.columns = [
+      { header: 'Item ID', key: 'item_id', width: 15 },
+      { header: 'Name', key: 'name', width: 30 },
+      { header: 'Category', key: 'category', width: 15 },
+      { header: 'Quantity', key: 'quantity', width: 10 },
+      { header: 'Min. Quantity', key: 'min_quantity', width: 15 },
+      { header: 'Expiry Date', key: 'expiry_date', width: 15 },
+      { header: 'Location', key: 'location', width: 30 }
+    ];
+
+    // Add the data rows
+    worksheet.addRows(inventoryData);
+
+    res.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.attachment('inventory.xlsx');
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (error) {
+    console.error('Excel Export Error:', error);
+    res.status(500).send('Error generating Excel file');
+  }
+});
+
+/**
+ * GET /api/export/pdf
+ * Generates and sends a PDF file of the inventory.
+ */
+app.get('/api/export/pdf', async (req, res) => {
+  try {
+    const inventoryData = await fetchInventory();
+    const doc = new PDFDocument({ margin: 30, size: 'A4' });
+
+    res.header('Content-Type', 'application/pdf');
+    res.attachment('inventory.pdf');
+    doc.pipe(res);
+
+    // --- PDF Content ---
+    doc.fontSize(18).text('QMedic Inventory Report', { align: 'center' });
+    doc.moveDown();
+
+    // Draw table header
+    const tableTop = doc.y;
+    const itemX = 30;
+    const nameX = 100;
+    const categoryX = 250;
+    const qtyX = 350;
+    const expiryX = 420;
+
+    doc.fontSize(10).font('Helvetica-Bold');
+    doc.text('Item ID', itemX, tableTop);
+    doc.text('Name', nameX, tableTop);
+    doc.text('Category', categoryX, tableTop);
+    doc.text('Quantity', qtyX, tableTop);
+    doc.text('Expiry Date', expiryX, tableTop, { width: 100 });
+    doc.moveDown();
+    doc.font('Helvetica');
+
+    // Draw table rows
+    for (const item of inventoryData) {
+      const rowY = doc.y;
+      doc.text(item.item_id, itemX, rowY);
+      doc.text(item.name, nameX, rowY, { width: 140 }); // Wrap text
+      doc.text(item.category, categoryX, rowY);
+      doc.text(item.quantity.toString(), qtyX, rowY, { width: 60 });
+      // Use the pre-formatted date string from fetchInventory
+      doc.text(item.expiry_date || 'N/A', expiryX, rowY, { width: 100 });
+      doc.moveDown(0.5); // Add spacing
+    }
+    // --- End PDF Content ---
+
+    doc.end();
+
+  } catch (error) {
+    console.error('PDF Export Error:', error);
+    res.status(500).send('Error generating PDF file');
+  }
+});
+
+// =============================================
+// --- End of NEW Export Routes ---
+
+
 /**
  * Scheduled task to check for expiring items daily.
  */
@@ -352,7 +499,7 @@ app.post('/api/notifications/read/:id', async (req, res) => {
                 if (ok) {
                     console.log(`✅ Expiry email sent for ${item.item_id}`);
                     await pool.query(`
-                        INSERT IGNORE INTO notification_log
+                        INSERT IGGNORE INTO notification_log
                         (item_fk, alert_type, item_id_at_alert, item_name, location, expiry_date_at_alert, details)
                         VALUES (?, '7-Day Expiry Warning', ?, ?, ?, ?, ?)`,
                         [item.id, item.item_id, item.name, item.location, item.expiry_date, `Expires in ${daysLeft} days`]
