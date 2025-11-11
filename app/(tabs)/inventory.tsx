@@ -94,6 +94,7 @@ export default function InventoryScreen() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        await loadInitialData();
       } catch (error) {
         console.error("Web Export Error:", error);
         Alert.alert("Export Failed", "Could not download the file.");
