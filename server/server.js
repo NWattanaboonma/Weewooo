@@ -173,24 +173,24 @@ app.post('/api/action/log', async (req, res) => {
             console.log(`✅ Low stock notification logged for item ${itemId}.`);
 
             // Send low stock email alert
-            await sendEmailJS({
-                service_id: 'service_o9baz0e',
-                template_id: 'template_k05so3m',
-                user_id: 'KetRjtX41DqNLAL84',
-                accessToken: 'zAQUIbBQ4tu2YQdgBCbCJ',
-                template_params: {
-                    title: `Low Stock Alert: ${updatedItem.name} (${itemId})`,
-                    name: 'Q-Medic Bot',
-                    time: new Date().toLocaleString(),
-                    item: updatedItem.name,
-                    item_id: itemId,
-                    category: updatedItem.category,
-                    location: updatedItem.location,
-                    quantity: updatedItem.quantity,
-                    expiry_date: formatDateForFrontend(updatedItem.expiry_date),
-                    daysLeft: 'N/A' 
-                }
-            });
+            // await sendEmailJS({
+            //     service_id: 'service_o9baz0e',
+            //     template_id: 'template_k05so3m',
+            //     user_id: 'KetRjtX41DqNLAL84',
+            //     accessToken: 'zAQUIbBQ4tu2YQdgBCbCJ',
+            //     template_params: {
+            //         title: `Low Stock Alert: ${updatedItem.name} (${itemId})`,
+            //         name: 'Q-Medic Bot',
+            //         time: new Date().toLocaleString(),
+            //         item: updatedItem.name,
+            //         item_id: itemId,
+            //         category: updatedItem.category,
+            //         location: updatedItem.location,
+            //         quantity: updatedItem.quantity,
+            //         expiry_date: formatDateForFrontend(updatedItem.expiry_date),
+            //         daysLeft: 'N/A' 
+            //     }
+            // });
         }
 
         await connection.commit();
@@ -450,7 +450,7 @@ app.get('/api/export/history', async (req, res) => {
 /**
  * Scheduled task to check for expiring items daily.
  */
- cron.schedule('* * * * *', async () => {
+ cron.schedule('0 8 * * *', async () => {
         try {
             console.log('⏰ Running daily expiry check...');
             const [items] = await pool.query(`
