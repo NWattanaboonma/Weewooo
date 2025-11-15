@@ -48,6 +48,7 @@ export default function InventoryScreen() {
     recentSearches,
     addRecentSearch,
     loadInitialData,
+    currentUser,
   } = useInventory();
   const [selectedCategory, setSelectedCategory] = useState<
     "All Categories" | ItemCategory
@@ -82,7 +83,8 @@ export default function InventoryScreen() {
 
     const fileExt = format === "excel" ? "xlsx" : format;
     const fileName = `inventory.${fileExt}`;
-    const downloadUrl = `${API_BASE_URL}/export/${format}`;
+    // Include current user as query parameter
+    const downloadUrl = `${API_BASE_URL}/export/${format}?user=${encodeURIComponent(currentUser)}`;
 
     if (Platform.OS === "web") {
       // --- WEB-SPECIFIC LOGIC ---

@@ -293,10 +293,13 @@ app.get('/api/export/csv', async (req, res) => {
     const json2csvParser = new Parser({ fields });
     const csv = json2csvParser.parse(inventoryData);
 
+    // Get user from query parameter, fallback to 'System' if not provided
+    const user = req.query.user || 'System';
+
     // --- Log success before sending response ---
     await pool.query(
-      'INSERT INTO export_log (format, status, details) VALUES (?, ?, ?)',
-      ['CSV', 'Success', `Exported ${inventoryData.length} items.`]
+      'INSERT INTO export_log (format, status, details, user) VALUES (?, ?, ?, ?)',
+      ['CSV', 'Success', `Exported ${inventoryData.length} items.`, user]
     );
 
     res.header('Content-Type', 'text/csv');
@@ -305,10 +308,12 @@ app.get('/api/export/csv', async (req, res) => {
 
   } catch (error) {
     console.error('CSV Export Error:', error);
+    // Get user from query parameter, fallback to 'System' if not provided
+    const user = req.query.user || 'System';
     // --- Log failure ---
     await pool.query(
-      'INSERT INTO export_log (format, status, details) VALUES (?, ?, ?)',
-      ['CSV', 'Failed', error.message]
+      'INSERT INTO export_log (format, status, details, user) VALUES (?, ?, ?, ?)',
+      ['CSV', 'Failed', error.message, user]
     );
     res.status(500).send('Error generating CSV file');
   }
@@ -336,10 +341,13 @@ app.get('/api/export/excel', async (req, res) => {
     ];
     worksheet.addRows(inventoryData);
 
+    // Get user from query parameter, fallback to 'System' if not provided
+    const user = req.query.user || 'System';
+
     // --- Log success before streaming response ---
     await pool.query(
-      'INSERT INTO export_log (format, status, details) VALUES (?, ?, ?)',
-      ['Excel', 'Success', `Exported ${inventoryData.length} items.`]
+      'INSERT INTO export_log (format, status, details, user) VALUES (?, ?, ?, ?)',
+      ['Excel', 'Success', `Exported ${inventoryData.length} items.`, user]
     );
 
     res.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -349,10 +357,12 @@ app.get('/api/export/excel', async (req, res) => {
 
   } catch (error) {
     console.error('Excel Export Error:', error);
+    // Get user from query parameter, fallback to 'System' if not provided
+    const user = req.query.user || 'System';
     // --- Log failure ---
     await pool.query(
-      'INSERT INTO export_log (format, status, details) VALUES (?, ?, ?)',
-      ['Excel', 'Failed', error.message]
+      'INSERT INTO export_log (format, status, details, user) VALUES (?, ?, ?, ?)',
+      ['Excel', 'Failed', error.message, user]
     );
     res.status(500).send('Error generating Excel file');
   }
@@ -397,18 +407,23 @@ app.get('/api/export/pdf', async (req, res) => {
 
     doc.end(); // Finalize the PDF
 
+    // Get user from query parameter, fallback to 'System' if not provided
+    const user = req.query.user || 'System';
+
     // --- Log success after doc is finalized ---
     await pool.query(
-      'INSERT INTO export_log (format, status, details) VALUES (?, ?, ?)',
-      ['PDF', 'Success', `Exported ${inventoryData.length} items.`]
+      'INSERT INTO export_log (format, status, details, user) VALUES (?, ?, ?, ?)',
+      ['PDF', 'Success', `Exported ${inventoryData.length} items.`, user]
     );
 
   } catch (error) {
     console.error('PDF Export Error:', error);
+    // Get user from query parameter, fallback to 'System' if not provided
+    const user = req.query.user || 'System';
     // --- Log failure ---
     await pool.query(
-      'INSERT INTO export_log (format, status, details) VALUES (?, ?, ?)',
-      ['PDF', 'Failed', error.message]
+      'INSERT INTO export_log (format, status, details, user) VALUES (?, ?, ?, ?)',
+      ['PDF', 'Failed', error.message, user]
     );
     res.status(500).send('Error generating PDF file');
   }
