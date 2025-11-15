@@ -153,27 +153,24 @@ app.post('/api/action/log', async (req, res) => {
             console.log(`✅ Low stock notification logged for item ${itemId}.`);
 
             // Send low stock email alert
-            await sendEmailJS({
-                service_id: 'service_o9baz0e',
-                template_id: 'template_k05so3m', // FIX: Replace this placeholder with your actual Low Stock template ID from EmailJS.
-                user_id: 'KetRjtX41DqNLAL84',
-                accessToken: 'zAQUIbBQ4tu2YQdgBCbCJ',
-                template_params: {
-                    title: `Low Stock Alert: ${updatedItem.name} (${itemId})`,
-                    name: 'Q-Medic Bot',
-                    time: new Date().toLocaleString(),
-                    item: updatedItem.name,
-                    item_id: itemId,
-                    category: updatedItem.category,
-                    location: updatedItem.location,
-                    quantity: updatedItem.quantity,
-                    // Low stock alerts don't typically have expiry/daysLeft, but you can add if needed
-                    expiry_date: formatDateForFrontend(updatedItem.expiry_date),
-                    daysLeft: 'N/A' 
-                }
-            });
-
-
+            // await sendEmailJS({
+            //     service_id: 'service_o9baz0e',
+            //     template_id: 'template_k05so3m',
+            //     user_id: 'KetRjtX41DqNLAL84',
+            //     accessToken: 'zAQUIbBQ4tu2YQdgBCbCJ',
+            //     template_params: {
+            //         title: `Low Stock Alert: ${updatedItem.name} (${itemId})`,
+            //         name: 'Q-Medic Bot',
+            //         time: new Date().toLocaleString(),
+            //         item: updatedItem.name,
+            //         item_id: itemId,
+            //         category: updatedItem.category,
+            //         location: updatedItem.location,
+            //         quantity: updatedItem.quantity,
+            //         expiry_date: formatDateForFrontend(updatedItem.expiry_date),
+            //         daysLeft: 'N/A' 
+            //     }
+            // });
         }
 
         await connection.commit();
@@ -267,9 +264,7 @@ app.post('/api/notifications/read/:id', async (req, res) => {
 /**
  * Scheduled task to check for expiring items daily.
  */
-// Set to run once daily at 8:00 AM in the Bangkok timezone.
-// You can change the time by modifying the cron string (e.g., '0 22 * * *' for 10 PM).
- cron.schedule('* * * * *', async () => {
+ cron.schedule('0 8 * * *', async () => {
         try {
             console.log('⏰ Running daily expiry check...');
             // Fetch items and any existing expiry warnings for them to prevent duplicates
