@@ -21,7 +21,7 @@ const PORT = 3000;
 const pool = mysql.createPool({
     host: '127.0.0.1',
     user: 'root',
-    password: '1234',
+    password: 'Mook12345@TH',
     database: 'QMedicDB'
 });
 
@@ -210,15 +210,24 @@ app.post('/api/action/log', async (req, res) => {
  * Fetches all transaction records.
  */
 app.get('/api/history', async (req, res) => {
+    const { caseId } = req.query; // ดึง caseId จาก query parameters
+
     try {
-        const query = `
+        let query = `
             SELECT id, item_id as itemId, item_name as itemName, 
                    action_date as date, case_id as caseId, user, quantity, 
                    category, action
             FROM inventory_history
-            ORDER BY action_date DESC;
         `;
-        const [rows] = await pool.query(query);
+        const params = [];
+
+        if (caseId) {
+            query += ' WHERE case_id = ?';
+            params.push(caseId);
+        }
+
+        query += ' ORDER BY action_date DESC;';
+        const [rows] = await pool.query(query, params);
         
         const history = rows.map(row => ({
             ...row,
@@ -584,42 +593,48 @@ app.get('/api/export/history', async (req, res) => {
 
 
 // --- Start Server ---
-app.listen(PORT, '0.0.0.0', async () => {
-    console.log(`\n🚀 Server running on port ${PORT}`);
+// Only start listening if the file is run directly (not when imported by a test)
+if (require.main === module) {
+    app.listen(PORT, '0.0.0.0', async () => {
+        console.log(`\n🚀 Server running on port ${PORT}`);
 
-    const { networkInterfaces } = require('os');
-    const nets = networkInterfaces();
-    let localIp = 'localhost';
+        const { networkInterfaces } = require('os');
+        const nets = networkInterfaces();
+        let localIp = 'localhost';
 
-    const preferredInterfaces = ['Wi-Fi', 'Ethernet', 'en0', 'wlan0'];
-    for (const name of preferredInterfaces) {
-        if (nets[name]) {
-            const interfaceDetails = nets[name].find(
-                net => net.family === 'IPv4' && !net.internal
-            );
-            if (interfaceDetails) {
-                localIp = interfaceDetails.address;
-                break;
+        const preferredInterfaces = ['Wi-Fi', 'Ethernet', 'en0', 'wlan0'];
+        for (const name of preferredInterfaces) {
+            if (nets[name]) {
+                const interfaceDetails = nets[name].find(
+                    net => net.family === 'IPv4' && !net.internal
+                );
+                if (interfaceDetails) {
+                    localIp = interfaceDetails.address;
+                    break;
+                }
             }
         }
-    }
 
-    console.log(`\n✅ Server is accessible on your network at: http://${localIp}:${PORT}`);
+        console.log(`\n✅ Server is accessible on your network at: http://${localIp}:${PORT}`);
 
-    try {
-        const apiTsPath = path.join(__dirname, '..', 'contexts', 'api.ts');
-        const newApiUrlLine = `export const API_BASE_URL = 'http://${localIp}:${PORT}/api'; // <-- 🛑 This is auto-updated by server.js`;
+        try {
+            const apiTsPath = path.join(__dirname, '..', 'contexts', 'api.ts');
+            const newApiUrlLine = `export const API_BASE_URL = 'http://${localIp}:${PORT}/api'; // <-- 🛑 This is auto-updated by server.js`;
 
-        let fileContent = await fs.readFile(apiTsPath, 'utf-8');
-        
-        const updatedContent = fileContent.replace(
-            /export const API_BASE_URL = '.*';/, 
-            newApiUrlLine
-        );
+            let fileContent = await fs.readFile(apiTsPath, 'utf-8');
+            
+            const updatedContent = fileContent.replace(
+                /export const API_BASE_URL = '.*';/, 
+                newApiUrlLine
+            );
 
-        await fs.writeFile(apiTsPath, updatedContent, 'utf-8');
-        console.log('✅ Automatically updated contexts/api.ts with the correct IP address.');
-    } catch (error) {
-        console.error('❌ Failed to auto-update contexts/api.ts. Please update it manually.', error);
-    }
-});
+            await fs.writeFile(apiTsPath, updatedContent, 'utf-8');
+            console.log('✅ Automatically updated contexts/api.ts with the correct IP address.');
+        } catch (error) {
+            console.error('❌ Failed to auto-update contexts/api.ts. Please update it manually.', error);
+        }
+    });
+}
+
+// Export for testing purposes
+module.exports = { app, pool };
