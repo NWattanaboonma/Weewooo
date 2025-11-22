@@ -25,6 +25,9 @@ const pool = mysql.createPool({
     database: 'QMedicDB'
 });
 
+const cron = require('node-cron');
+const fetch = require('node-fetch'); // EmailJS API
+
 // Utility function to safely format Date objects received from MySQL
 const formatDateForFrontend = (date) => {
     if (!date) return null;
@@ -113,6 +116,7 @@ app.get('/api/inventory', async (req, res) => {
  */
 app.post('/api/action/log', async (req, res) => {
     const { itemId, action, quantity, caseId = `C${Math.floor(Math.random() * 90000) + 10000}`, user = 'Current User' } = req.body;
+    const qty = Number(quantity) || 0;
 
     const connection = await pool.getConnection();
 
