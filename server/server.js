@@ -1,3 +1,4 @@
+require('dotenv').config();
 const mysql = require('mysql2/promise');
 const express = require('express');
 const cors = require('cors');
@@ -17,18 +18,11 @@ app.use(express.json());
 
 const PORT = 3000;
 
-// MySQL connection pool configuration
 const pool = mysql.createPool({
-<<<<<<< HEAD
-    host: '192.168.1.54',
-    user: 'usrParamedic',
-    password: 'paramedic1234',
-=======
-    host: '127.0.0.1',
-    user: 'root',
-    password: '1234',
->>>>>>> origin/Manow
-    database: 'QMedicDB'
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
 });
 
 // Utility function to safely format Date objects received from MySQL

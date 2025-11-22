@@ -39,3 +39,7 @@ yarn-error.*
 app-example
 contexts/api.ts
 contexts/api.ts
+
+#env
+.env
+node_modules/
