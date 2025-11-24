@@ -1,13 +1,28 @@
 module.exports = {
-  // Tell Jest to look for tests in the root `test` directory
-  testMatch: ['<rootDir>/test/**/*.test.js'],
+  // Use the Expo preset so your mobile app tests work
+  preset: "jest-expo",
 
-  // Tell Jest where to find the node modules for the server
-  moduleDirectories: ['node_modules', 'server/node_modules'],
+  // Tell Jest to look for tests in BOTH places:
+  // 1. The 'test' folder (Server tests)
+  // 2. The 'app' folder (Mobile App tests)
+  testMatch: [
+    "<rootDir>/test/**/*.test.js",
+    "<rootDir>/app/**/__tests__/**/*.[jt]s?(x)",
+    "<rootDir>/app/**/*.test.[jt]s?(x)",
+    "<rootDir>/test/**/__tests__/**/*.[jt]s?(x)",
+    "<rootDir>/test/**/*.test.[jt]s?(x)",
+  ],
 
-  // This helps Jest understand that when a test file asks for '../server/server',
-  // it should look in the correct directory.
+  // Setup for your server tests to find the server files
   moduleNameMapper: {
-    '^../server/(.*)$': '<rootDir>/server/$1',
+    "^../server/(.*)$": "<rootDir>/server/$1",
+    "^@/(.*)$": "<rootDir>/$1" // Keeps your @ alias working for the app
   },
+
+  // Ignore the actual server source code folder to prevent conflicts, 
+  // but allow the 'test' folder we just defined.
+  testPathIgnorePatterns: [
+    "/node_modules/",
+    "/server/node_modules/"
+  ]
 };
