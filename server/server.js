@@ -11,6 +11,9 @@ const { Parser } = require('json2csv');
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 
+// --- NEW --- Import the router for history
+const createHistoryRouter = require('./history');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -21,11 +24,10 @@ const PORT = 3000;
 const pool = mysql.createPool({
     host: '127.0.0.1',
     user: 'root',
-    password: 'Mook12345@TH',
+    password: 'Manow_wan@1234',
     database: 'QMedicDB'
 });
 
-const cron = require('node-cron');
 const fetch = require('node-fetch'); // EmailJS API
 
 // Utility function to safely format Date objects received from MySQL
@@ -110,143 +112,9 @@ app.get('/api/inventory', async (req, res) => {
     }
 });
 
-/**
- * POST /api/action/log
- * Logs an inventory action (Check In, Check Out, Use, etc.) and updates item quantity.
- */
-app.post('/api/action/log', async (req, res) => {
-    const { itemId, action, quantity, caseId = `C${Math.floor(Math.random() * 90000) + 10000}`, user = 'Current User' } = req.body;
-    const qty = Number(quantity) || 0;
-
-    const connection = await pool.getConnection();
-
-    try {
-        await connection.beginTransaction();
-
-        // 1. Get Item Data and its minimum quantity threshold
-        const [items] = await connection.query('SELECT id, name, category, quantity FROM inventory_item WHERE item_id = ?', [itemId]);
-        if (items.length === 0) throw new Error(`Item ID ${itemId} not found.`);
-        const item = items[0];
-        
-        // 2. Calculate New Quantity
-        let updatedQuantity = item.quantity;
-        const actionsThatReduceStock = ["Use", "Check Out", "Remove All"];
-
-        if (action === 'Check In') {
-            updatedQuantity += quantity;
-        } else if (actionsThatReduceStock.includes(action)) {
-            updatedQuantity -= quantity;
-        }
-        
-        updatedQuantity = Math.max(0, updatedQuantity); 
-
-        // 3. Update inventory_item
-        await connection.query('UPDATE inventory_item SET quantity = ?, last_scanned = NOW() WHERE id = ?', [updatedQuantity, item.id]);
-
-        // 4. Insert into inventory_history
-        const historyQuery = `
-            INSERT INTO inventory_history 
-            (item_fk, item_id, item_name, action, quantity, action_date, case_id, user, category)
-            VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?);
-        `;
-        await connection.query(historyQuery, [
-            item.id, itemId, item.name, action, quantity, caseId, user, item.category
-        ]);
-
-        // 5. Check for Low Stock and Send Notification
-        const [itemDetails] = await connection.query('SELECT quantity, min_quantity, name, location, expiry_date FROM inventory_item WHERE id = ?', [item.id]);
-        const updatedItem = itemDetails[0];
-        const minQty = updatedItem.min_quantity;
-        const actionsThatTriggerAlert = ["Use", "Check Out", "Remove All"];
-
-        if (updatedItem.quantity <= minQty && actionsThatTriggerAlert.includes(action)) {
-            const insertNotifQuery = `
-                INSERT INTO notification_log 
-                    (item_fk, alert_type, item_id_at_alert, item_name, location, expiry_date_at_alert, details)
-                VALUES (?, 'Low Stock', ?, ?, ?, ?, ?);
-            `;
-            await connection.query(insertNotifQuery, [
-                item.id,
-                itemId,
-                updatedItem.name,
-                updatedItem.location,
-                updatedItem.expiry_date,
-                `Quantity is ${updatedItem.quantity}, which is at or below the minimum of ${minQty}.`
-            ]);
-
-            console.log(`✅ Low stock notification logged for item ${itemId}.`);
-
-            // Send low stock email alert
-            // await sendEmailJS({
-            //     service_id: 'service_o9baz0e',
-            //     template_id: 'template_k05so3m',
-            //     user_id: 'KetRjtX41DqNLAL84',
-            //     accessToken: 'zAQUIbBQ4tu2YQdgBCbCJ',
-            //     template_params: {
-            //         title: `Low Stock Alert: ${updatedItem.name} (${itemId})`,
-            //         name: 'Q-Medic Bot',
-            //         time: new Date().toLocaleString(),
-            //         item: updatedItem.name,
-            //         item_id: itemId,
-            //         category: updatedItem.category,
-            //         location: updatedItem.location,
-            //         quantity: updatedItem.quantity,
-            //         expiry_date: formatDateForFrontend(updatedItem.expiry_date),
-            //         daysLeft: 'N/A' 
-            //     }
-            // });
-        }
-
-        await connection.commit();
-        res.status(200).send({ message: 'Action logged and inventory updated.', newQuantity: updatedQuantity });
-
-    } catch (error) {
-        await connection.rollback();
-        console.error('Transaction failed:', error);
-        res.status(500).send({ error: 'Failed to complete inventory transaction.' });
-    } finally {
-        connection.release();
-    }
-});
-
-/**
- * GET /api/history
- * Fetches all transaction records.
- */
-app.get('/api/history', async (req, res) => {
-    const { caseId } = req.query; // ดึง caseId จาก query parameters
-
-    try {
-        let query = `
-            SELECT id, item_id as itemId, item_name as itemName, 
-                   action_date as date, case_id as caseId, user, quantity, 
-                   category, action
-            FROM inventory_history
-        `;
-        const params = [];
-
-        if (caseId) {
-            query += ' WHERE case_id = ?';
-            params.push(caseId);
-        }
-
-        query += ' ORDER BY action_date DESC;';
-        const [rows] = await pool.query(query, params);
-        
-        const history = rows.map(row => ({
-            ...row,
-            date: row.date ? new Date(row.date).toLocaleString('en-US', {
-                month: '2-digit', day: '2-digit', year: 'numeric',
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
-            }) : 'N/A'
-        }));
-
-        res.json(history);
-    } catch (error) {
-        console.error('Error fetching history:', error);
-        res.status(500).send({ message: 'Failed to fetch history data.' });
-    }
-});
+// --- NEW --- Create and use the history router
+const historyRouter = createHistoryRouter(pool);
+app.use('/api', historyRouter);
 
 /**
  * GET /api/notifications
