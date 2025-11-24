@@ -168,14 +168,14 @@ export default function InventoryScreen() {
     });
 
   const getQuantityForUse = (itemId: string): number => {
-    const q = parseInt(quantitiesToUse[itemId] || "1", 10);
-    return isNaN(q) || q < 1 ? 1 : q;
+    const q = parseInt(quantitiesToUse[itemId] || "0", 10);
+    return isNaN(q) || q < 0 ? 0 : q;
   };
 
   const handleQuantityChange = (itemId: string, value: string) => {
     setQuantitiesToUse((prev) => ({
       ...prev,
-      [itemId]: value.replace(/[^1-9]/g, ""),
+      [itemId]: value.replace(/[^0-9]/g, ""),
     }));
   };
 

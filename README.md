@@ -128,6 +128,48 @@ Scan the QR code with the Expo Go app on your physical device, or use an emulato
 
 Your application should now load data from the API and allow you to perform inventory actions.
 
+## 🧪 Running Unit Tests
+
+This project uses [Jest](https://jestjs.io/) for unit and integration testing. The tests are located in the `test/` directory and cover both the frontend components (React Native) and the backend API (Node.js/Express).
+
+### Prerequisites
+
+Before running tests, ensure you have installed all the project dependencies, including the development dependencies needed for testing:
+
+```bash
+npm install
+```
+
+### Running All Test Suites
+
+To run the complete test suite (including tests for the API server and React Native components), use the `test` script defined in your `package.json`:
+
+```bash
+npm test
+```
+
+### Generating a Test Coverage Report
+
+To run all tests and generate a report showing how much of your code is covered by those tests, use the `test:coverage` script:
+
+```bash
+npm run test:coverage
+```
+
+This command will print a coverage summary in your console and create a detailed HTML report in a new `coverage/` directory at the project root.
+
+### Running a Specific Test File
+
+When working on a specific feature, you can run only the tests for that file. Use `npx` to run the locally installed Jest package and provide the path to the test file.
+
+```bash
+# Example: Run only the backend history API tests
+npx jest test/history.test.js
+
+# Example: Run only the frontend Scan screen tests
+npx jest test/Scan.test.tsx
+```
+
 ## Get a fresh project
 
 When you're ready, run:

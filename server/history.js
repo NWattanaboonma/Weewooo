@@ -24,6 +24,10 @@ function createHistoryRouter(pool) {
             if (action === 'Check In') {
                 updatedQuantity += quantity;
             } else if (actionsThatReduceStock.includes(action)) {
+                // --- FIX: Add explicit check for insufficient stock ---
+                if (item.quantity < quantity) {
+                    throw new Error(`Insufficient stock. Available: ${item.quantity}, Requested: ${quantity}`);
+                }
                 updatedQuantity -= quantity;
             }
             
@@ -62,7 +66,7 @@ function createHistoryRouter(pool) {
                     updatedItem.expiry_date,
                     `Quantity is ${updatedItem.quantity}, which is at or below the minimum of ${minQty}.`
                 ]);
-                console.log(`✅ Low stock notification logged for item ${itemId}.`);
+                // console.log(`✅ Low stock notification logged for item ${itemId}.`);
             }
 
             await connection.commit();
@@ -70,28 +74,53 @@ function createHistoryRouter(pool) {
 
         } catch (error) {
             await connection.rollback();
-            console.error('Transaction failed:', error);
-            res.status(500).send({ error: 'Failed to complete inventory transaction.' });
+            // Check for the specific "Item not found" error
+            if (error.message.includes('Item ID')) {
+                res.status(404).send({ error: error.message });
+            // --- FIX: Handle insufficient stock error ---
+            } else if (error.message.includes('Insufficient stock')) {
+                res.status(400).send({ error: error.message });
+            } else {
+                console.error('Transaction failed:', error);
+                res.status(500).send({ error: 'Failed to complete inventory transaction.' });
+            }
         } finally {
             connection.release();
         }
     });
 
     router.get('/history', async (req, res) => {
-        const { caseId } = req.query;
+        // --- FIX: Re-add filtering and sorting parameters ---
+        const { caseId, action, category, sort } = req.query;
         try {
             let query = `
                 SELECT id, item_id as itemId, item_name as itemName, 
                        action_date as date, case_id as caseId, user, quantity, 
                        category, action
                 FROM inventory_history
+                WHERE 1=1
             `;
             const params = [];
+
+            // --- FIX: Add logic to build the query dynamically ---
             if (caseId) {
-                query += ' WHERE case_id = ?';
+                query += ' AND case_id = ?';
                 params.push(caseId);
             }
-            query += ' ORDER BY action_date DESC;';
+            if (action) {
+                query += ' AND action = ?';
+                params.push(action);
+            }
+            if (category) {
+                query += ' AND category = ?';
+                params.push(category);
+            }
+            if (sort === 'date') {
+                query += ' ORDER BY action_date DESC';
+            } else {
+                query += ' ORDER BY action_date DESC'; // Default sort
+            }
+
             const [rows] = await pool.query(query, params);
             const history = rows.map(row => ({ ...row, date: row.date ? new Date(row.date).toLocaleString('en-US') : 'N/A' }));
             res.json(history);
