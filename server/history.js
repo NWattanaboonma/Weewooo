@@ -19,16 +19,16 @@ function createHistoryRouter(pool) {
             
             // 2. Calculate New Quantity
             let updatedQuantity = item.quantity;
-            const actionsThatReduceStock = ["Use", "Check Out", "Remove All"];
+            const actionsThatReduceStock = ["Use", "Check Out", "Remove All", "Transfer"]; 
 
             if (action === 'Check In') {
-                updatedQuantity += quantity;
+                updatedQuantity += qty; // --- FIX: Use parsed number
             } else if (actionsThatReduceStock.includes(action)) {
                 // --- FIX: Add explicit check for insufficient stock ---
-                if (item.quantity < quantity) {
-                    throw new Error(`Insufficient stock. Available: ${item.quantity}, Requested: ${quantity}`);
+                if (item.quantity < qty) { // --- FIX: Use parsed number
+                    throw new Error(`Insufficient stock. Available: ${item.quantity}, Requested: ${qty}`);
                 }
-                updatedQuantity -= quantity;
+                updatedQuantity -= qty; // --- FIX: Use parsed number
             }
             
             updatedQuantity = Math.max(0, updatedQuantity); 
@@ -43,7 +43,7 @@ function createHistoryRouter(pool) {
                 VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?);
             `;
             await connection.query(historyQuery, [
-                item.id, itemId, item.name, action, quantity, caseId, user, item.category
+                item.id, itemId, item.name, action, qty, caseId, user, item.category
             ]);
 
             // 5. Check for Low Stock and Send Notification (logic remains the same)
@@ -51,6 +51,7 @@ function createHistoryRouter(pool) {
             const updatedItem = itemDetails[0];
             const minQty = updatedItem.min_quantity;
             const actionsThatTriggerAlert = ["Use", "Check Out", "Remove All"];
+            const actionsThatTriggerAlert = ["Use", "Check Out", "Remove All", "Transfer"];
 
             if (updatedItem.quantity <= minQty && actionsThatTriggerAlert.includes(action)) {
                 const insertNotifQuery = `

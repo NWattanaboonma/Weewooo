@@ -168,8 +168,13 @@ export default function InventoryScreen() {
     });
 
   const getQuantityForUse = (itemId: string): number => {
-    const q = parseInt(quantitiesToUse[itemId] || "0", 10);
-    return isNaN(q) || q < 0 ? 0 : q;
+    const value = quantitiesToUse[itemId];
+    // If the input is empty or undefined, default to 1.
+    if (value === "" || value === undefined) {
+      return 1;
+    }
+    const q = parseInt(value, 10);
+    return isNaN(q) || q < 0 ? 0 : q; // Otherwise, respect the entered value, including 0.
   };
 
   const handleQuantityChange = (itemId: string, value: string) => {
