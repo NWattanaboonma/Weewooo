@@ -37,3 +37,12 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+contexts/api.ts
+contexts/api.ts
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

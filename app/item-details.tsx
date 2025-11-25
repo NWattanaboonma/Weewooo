@@ -64,21 +64,17 @@ export default function ItemDetailsScreen() {
           </View>
           <View style={[styles.detailRow, styles.detailRowBorder]}>
             <Text style={styles.detailLabel}>Expiry Date</Text>
-            <Text style={styles.detailValue}>{item.expiryDate}</Text>{" "}
-            {/* Using lastScanned as expiry for now */}
+            <Text style={styles.detailValue}>{item.expiryDate}</Text>
           </View>
           <View style={[styles.detailRow, styles.detailRowBorder]}>
             <Text style={styles.detailLabel}>Location</Text>
-            <Text style={styles.detailValue}>{item.location}</Text>{" "}
-            {/* Placeholder location */}
+            <Text style={styles.detailValue}>{item.location}</Text>
           </View>
           <View style={[styles.detailRow, styles.detailRowBorder]}>
             <Text style={styles.detailLabel}>Category</Text>
             <Text style={styles.detailValue}>{item.category}</Text>
           </View>
           <View style={styles.detailRow}>
-            {" "}
-            {/* No bottom border for the last item */}
             <Text style={styles.detailLabel}>Status</Text>
             <Text style={styles.detailValue}>{item.status}</Text>
           </View>

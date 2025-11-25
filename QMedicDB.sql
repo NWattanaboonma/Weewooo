@@ -65,6 +65,21 @@ CREATE TABLE notification_log (
         ON DELETE CASCADE
 );
 
+-- Export Log Table
+CREATE TABLE export_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    -- 'Excel' instead of 'XLSX' to be more user-friendly
+    format ENUM('CSV', 'Excel', 'PDF') NOT NULL,
+    status ENUM('Success', 'Failed') NOT NULL,
+    
+    -- Store a simple message, like an error or success note
+    details VARCHAR(255),
+    
+    -- The user who performed the export (if known)
+    user VARCHAR(100) DEFAULT 'System', 
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 -- -----------------------------------------------------------
 
 -- INSERT Data to each table
@@ -77,7 +92,7 @@ CREATE TABLE notification_log (
 INSERT INTO inventory_item 
     (item_id, name, category, quantity, min_quantity, expiry_date, location, last_scanned)
 VALUES
-    ('MED001', 'Epinephrine Auto-Injector', 'Medication', 5, 5, '2024-10-21', 'Ambulance 1', '2025-10-21'),
+    ('MED001', 'Epinephrine Auto-Injector', 'Medication', 5, 5, '2025-9-29', 'Ambulance 1', '2025-10-21'),
     ('MED002', 'Morphine 10mg', 'Medication', 10, 5, '2027-01-07', 'Ambulance 1', '2025-10-21'),
     ('MED003', 'Aspirin 325mg', 'Medication', 20, 5, '2025-11-11', 'Ambulance 2', '2025-10-21'),
     ('EQP001', 'Defibrillator AED', 'Equipment', 2, 5, '2026-02-03', 'Ambulance Storage Room A', '2025-10-21'),
@@ -97,23 +112,24 @@ INSERT INTO inventory_history
     (item_fk, item_id, item_name, action, quantity, action_date, case_id, user, category)
 VALUES
     -- Record 1: MED001 - Check Out 5 units
-    ((SELECT id FROM inventory_item WHERE item_id = 'MED001'), 'MED001', 'Epinephrine Auto-Injector', 'Check Out', 5, '2023-10-26 10:30:26', 'C12345', 'John Doe', 'Medication'),
+    ((SELECT id FROM inventory_item WHERE item_id = 'MED001'), 'MED001', 'Epinephrine Auto-Injector', 'Check Out', 5, '2023-10-26 10:30:26', 'C12345', 'Paramedic Sam', 'Medication'),
     
     -- Record 2: EQP001 - Check In 1 unit
-    ((SELECT id FROM inventory_item WHERE item_id = 'EQP001'), 'EQP001', 'Defibrillator AED', 'Check In', 1, '2024-10-26 11:51:42', 'C12344', 'Jane Smith', 'Equipment'),
+    ((SELECT id FROM inventory_item WHERE item_id = 'EQP001'), 'EQP001', 'Defibrillator AED', 'Check In', 1, '2024-10-26 11:51:42', 'C12344', 'Dr. Hart', 'Equipment'),
     
     -- Record 3: SUP001 - Check Out 10 units
-    ((SELECT id FROM inventory_item WHERE item_id = 'SUP001'), 'SUP001', 'Gauze Pads 4x4', 'Check Out', 10, '2024-10-26 10:02:22', 'C12343', 'John Doe', 'Supplies'),
+    ((SELECT id FROM inventory_item WHERE item_id = 'SUP001'), 'SUP001', 'Gauze Pads 4x4', 'Check Out', 10, '2024-10-26 10:02:22', 'C12343', 'Nurse Jackie', 'Supplies'),
     
     -- Record 4: MED002 - Check In 2 units
-    ((SELECT id FROM inventory_item WHERE item_id = 'MED002'), 'MED002', 'Morphine 10mg', 'Check In', 2, '2024-10-26 14:06:05', 'C12342', 'Jane Smith', 'Medication');
+    ((SELECT id FROM inventory_item WHERE item_id = 'MED002'), 'MED002', 'Morphine 10mg', 'Check In', 2, '2024-10-26 14:06:05', 'C12342', 'Dr. Hart', 'Medication');
 
 -- Add one more action (e.g., a "Use" action) not in the mock to show the 'Use' action type:
-INSERT INTO inventory_history
-    (item_fk, item_id, item_name, action, quantity, action_date, case_id, user, category)
-VALUES
-    ((SELECT id FROM inventory_item WHERE item_id = 'MED003'), 'MED003', 'Aspirin 325mg', 'Use', 1, '2024-11-04 09:30:00', 'C12341', 'Current User', 'Medication');
-    
+-- Test the system.
+-- INSERT INTO inventory_history
+--     (item_fk, item_id, item_name, action, quantity, action_date, case_id, user, category)
+-- VALUES
+--     ((SELECT id FROM inventory_item WHERE item_id = 'MED003'), 'MED003', 'Aspirin 325mg', 'Use', 1, '2024-11-04 09:30:00', 'C12341', 'Current User', 'Medication');
+--     
 -- -----------------------------------------------------------
 -- 3. Notification Log (based on mockNotifications)
 -- -----------------------------------------------------------
@@ -124,7 +140,7 @@ VALUES
     -- Unread Notifications (1-5) - Set as Expiry Warning or Low Stock
     ((SELECT id FROM inventory_item WHERE item_id = 'MED002'), 'Expiry Warning', 'MED002', 'Morphine 10mg', 'Ambulance 1', '2025-10-25', FALSE),
     ((SELECT id FROM inventory_item WHERE item_id = 'SUP001'), 'Expiry Warning', 'SUP001', 'Gauze Pads 4x4', 'Ambulance 2', '2025-10-28', FALSE),
-    ((SELECT id FROM inventory_item WHERE item_id = 'MED003'), 'Expiry Warning', 'MED003', 'Aspirin 325mg', 'Storage Room A', '2025-10-30', FALSE),
+    ((SELECT id FROM inventory_item WHERE item_id = 'MED003'), 'Expiry Warning', 'MED003', 'Aspirin 325mg', 'Storage Room A', '2025-12-30', FALSE),
     ((SELECT id FROM inventory_item WHERE item_id = 'SUP002'), 'Low Stock', 'SUP002', 'Medical Gloves (Box)', 'Cabinet 3', '2025-10-27', FALSE),
     ((SELECT id FROM inventory_item WHERE item_id = 'EQP001'), 'Low Stock', 'EQP001', 'Defibrillator AED', 'Ambulance 1', '2025-10-26', FALSE), -- EQP001 is Low Stock based on quantity 2 < min_quantity 5
     
@@ -132,3 +148,6 @@ VALUES
     ((SELECT id FROM inventory_item WHERE item_id = 'MED001'), 'Expiry Warning', 'MED001', 'Epinephrine Auto-Injector', 'Ambulance 1', '2025-11-10', TRUE),
     ((SELECT id FROM inventory_item WHERE item_id = 'EQP002'), 'Expired', 'EQP002', 'Blood Pressure Monitor', 'Ambulance 2', '2025-11-15', TRUE), -- Set as Expired since item_item is expired
     ((SELECT id FROM inventory_item WHERE item_id = 'SUP001'), 'Low Stock', 'SUP001', 'Gauze Pads 4x4', 'Storage Room A', '2025-11-20', TRUE);
+    
+ALTER TABLE QMedicDB.notification_log
+ADD COLUMN details VARCHAR(255) NULL;
