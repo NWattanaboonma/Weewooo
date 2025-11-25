@@ -11,6 +11,7 @@ module.exports = {
     "<rootDir>/app/**/*.test.[jt]s?(x)",
     "<rootDir>/test/**/__tests__/**/*.[jt]s?(x)",
     "<rootDir>/test/**/*.test.[jt]s?(x)",
+    "<rootDir>/test/**/*.(test|spec).[jt]s?(x)"
   ],
 
   // Setup for your server tests to find the server files
