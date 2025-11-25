@@ -10,7 +10,9 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:e2e": "start-server-and-test \"npm run web -- --port 8082\" http://localhost:8082 \"cypress open --config-file test/auto_test/cypress.config.ts\"",
+    "test:e2e:run": "start-server-and-test \"npm run web -- --port 8082\" http://localhost:8082 \"cypress run --config-file test/auto_test/cypress.config.ts\""
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
@@ -66,7 +68,9 @@
     "jest-expo": "~54.0.12",
     "jest-junit": "^16.0.0",
     "react-test-renderer": "^19.1.0",
-    "typescript": "~5.9.2"
+    "start-server-and-test": "^2.0.4",
+    "typescript": "~5.9.2",
+    "cypress": "^13.13.1"
   },
   "private": true
 }
