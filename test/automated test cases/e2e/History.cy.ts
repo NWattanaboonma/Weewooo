@@ -78,6 +78,9 @@ describe("Unhappy Path Testcases", () => {
         cy.contains("Not enough items. Available: 45").should("be.visible");
         cy.contains("Use").parent() .should("have.attr", "aria-disabled", "true");
       });
+    cy.contains("History").click();
+    // Verify that the history page shows the used item
+    cy.url().should("include", "/history");
   });
 
   it("Testcase2", () => {
@@ -93,9 +96,12 @@ describe("Unhappy Path Testcases", () => {
         // Verify the input auto-corrected to ""
         cy.get('input[placeholder="1"]').should("have.value", "");
       });
+    cy.contains("History").click();
+    // Verify that the history page shows the used item
+    cy.url().should("include", "/history");
   });
 
-  it("Testcase3 - Empty Input Auto-correction (BP Monitor)", () => {
+  it("Testcase3", () => {
     cy.contains("Inventory").click();
 
     cy.contains("Blood Pressure Monitor")
@@ -110,5 +116,8 @@ describe("Unhappy Path Testcases", () => {
         // After clearing, the value should be an empty string.
         cy.get('input[placeholder="1"]').should("have.value", "");
       });
+    cy.contains("History").click();
+    // Verify that the history page shows the used item
+    cy.url().should("include", "/history");
   });
 });
