@@ -1,10 +1,6 @@
 import { defineConfig } from "cypress";
 
 export default defineConfig({
-  // Explicitly point to the tsconfig.json in this directory
-  typescript: {
-    configFile: "test/auto_test/tsconfig.json",
-  },
   e2e: {
     // Point to the new spec file location
     specPattern: "test/auto_test/**/*.cy.{js,jsx,ts,tsx}",
