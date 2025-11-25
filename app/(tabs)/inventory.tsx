@@ -501,11 +501,12 @@ export default function InventoryScreen() {
                       style={[
                         styles.actionButton,
                         styles.useButton,
-                        (item.quantity < getQuantityForUse(item.id) ||
-                          item.quantity <= 0) &&
-                          styles.disabledButton,
+                        (getQuantityForUse(item.id) <= 0 ||
+                          item.quantity < getQuantityForUse(item.id)) &&
+                          styles.disabledButton
                       ]}
                       onPress={() =>
+                        getQuantityForUse(item.id) > 0 &&
                         logInventoryAction(
                           item.id,
                           "Use",
@@ -513,6 +514,7 @@ export default function InventoryScreen() {
                         )
                       }
                       disabled={
+                        getQuantityForUse(item.id) <= 0 ||
                         item.quantity < getQuantityForUse(item.id) ||
                         item.quantity <= 0
                       }
@@ -523,11 +525,12 @@ export default function InventoryScreen() {
                       style={[
                         styles.actionButton,
                         styles.transferButton,
-                        (item.quantity < getQuantityForUse(item.id) ||
-                          item.quantity <= 0) &&
-                          styles.disabledButton,
+                        (getQuantityForUse(item.id) <= 0 ||
+                          item.quantity < getQuantityForUse(item.id)) &&
+                          styles.disabledButton
                       ]}
                       onPress={() =>
+                        getQuantityForUse(item.id) > 0 &&
                         logInventoryAction(
                           item.id,
                           "Transfer",
@@ -535,6 +538,7 @@ export default function InventoryScreen() {
                         )
                       }
                       disabled={
+                        getQuantityForUse(item.id) <= 0 ||
                         item.quantity < getQuantityForUse(item.id) ||
                         item.quantity <= 0
                       }

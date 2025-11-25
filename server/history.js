@@ -50,7 +50,6 @@ function createHistoryRouter(pool) {
             const [itemDetails] = await connection.query('SELECT quantity, min_quantity, name, location, expiry_date FROM inventory_item WHERE id = ?', [item.id]);
             const updatedItem = itemDetails[0];
             const minQty = updatedItem.min_quantity;
-            const actionsThatTriggerAlert = ["Use", "Check Out", "Remove All"];
             const actionsThatTriggerAlert = ["Use", "Check Out", "Remove All", "Transfer"];
 
             if (updatedItem.quantity <= minQty && actionsThatTriggerAlert.includes(action)) {
