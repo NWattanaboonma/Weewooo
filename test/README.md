@@ -53,6 +53,34 @@ npx jest test/Scan.test.tsx
 
 ```
 
+## End-to-End (E2E) Testing
+
+This project uses Cypress for E2E testing to simulate real user interactions in a browser environment. This ensures that the application's critical user flows work from start to finish.
+
+The E2E test scripts automatically start the web server and then launch Cypress, so no manual server setup is needed.
+
+### Running E2E Tests Interactively
+
+To open the Cypress Test Runner and run tests in an interactive window, use the following command. This is useful for development and debugging.
+
+```bash
+npm run test:e2e
+```
+
+### Running E2E Tests Headlessly
+
+To run all E2E tests headlessly in your terminal (as you would in a CI/CD environment), use this command:
+
+```bash
+npm run test:e2e:run
+```
+
+### Test File Location
+
+Cypress test files (specs) are located in the `test/automated test cases/` directory and end with `.cy.ts`. Any videos or screenshots captured during test runs will also be saved in this directory.
+
+```
+
 <!-- ## 4. Test Suites Overview
 
 *   `test/history.test.js`: Covers the backend API endpoints for logging inventory actions (`/api/action/log`) and retrieving history (`/api/history`).
