@@ -11,5 +11,5 @@ describe("App Navigation and Core Actions", () => {
     cy.contains("History").should("be.visible");
 
   });
-  // 
+  // Mook do here for the next test
 });
