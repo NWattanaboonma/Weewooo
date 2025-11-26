@@ -314,7 +314,7 @@ describe("ScanScreen - handleBarcodeScan Logic (Debounce ISP)", () => {
   });
 
   // T10: Debounced & Valid Code -> Skip (Silent Exit)
-  it("T11: Debounced, Valid code -> Should be skipped (silent exit)", async () => {
+  it("T10: Debounced, Valid code -> Should be skipped (silent exit)", async () => {
     await simulateDebounceState(queries); // Sets scanned = true
 
     act(() => fireCameraScanTest(VALID_CODE_IN_STOCK)); // Trigger again immediately
@@ -325,7 +325,7 @@ describe("ScanScreen - handleBarcodeScan Logic (Debounce ISP)", () => {
     expect(global.alert).not.toHaveBeenCalled();
   });
   // T11: Debounced & Invalid Code -> Skip (Silent Exit)
-  it("T13: Debounced, Invalid code -> Should be skipped (silent exit)", async () => {
+  it("T11: Debounced, Invalid code -> Should be skipped (silent exit)", async () => {
     await simulateDebounceState(queries); // Sets scanned = true
 
     act(() => fireCameraScanTest(INVALID_CODE));
@@ -336,7 +336,7 @@ describe("ScanScreen - handleBarcodeScan Logic (Debounce ISP)", () => {
   });
 
   // T12: Not Debounced & Valid Code -> Success (Process)
-  it("T10: Not debounced, Valid code -> Should process code (T1 logic)", async () => {
+  it("T12: Not debounced, Valid code -> Should process code (T1 logic)", async () => {
     act(() => fireCameraScanTest(VALID_CODE_IN_STOCK));
 
     await waitFor(() => {
@@ -348,7 +348,7 @@ describe("ScanScreen - handleBarcodeScan Logic (Debounce ISP)", () => {
   });
 
   // T13: Not Debounced & Invalid Code -> Fail (Alert & Debounce)
-  it("T12: Not debounced, Invalid code -> Should alert and temporarily debounce", async () => {
+  it("T13: Not debounced, Invalid code -> Should alert and temporarily debounce", async () => {
     act(() => fireCameraScanTest(INVALID_CODE));
 
     await waitFor(() => {
