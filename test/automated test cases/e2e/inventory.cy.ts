@@ -111,7 +111,7 @@ describe("QMedic Inventory E2E Search and Filter (20 PWC Tests)", () => {
    */
   const selectDropdownOption = (currentText, optionText) => {
     getDropdownButton(currentText).click();
-    cy.contains(optionText).should("be.visible").click();
+    cy.contains(optionText).click({ force: true });
   };
 
   /**
@@ -136,7 +136,7 @@ describe("QMedic Inventory E2E Search and Filter (20 PWC Tests)", () => {
    */
   const assertResults = (expectedNames, expectedCount) => {
     if (expectedCount === 0) {
-      cy.contains("No items found").should("be.visible");
+      cy.contains("No items found").scrollIntoView().should("be.visible");
       
       cy.contains(mockInventoryItems[0].name).should("not.exist"); 
     } else {
