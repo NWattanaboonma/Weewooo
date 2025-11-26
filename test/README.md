@@ -121,3 +121,4 @@ Cypress test files (specs) are located in the `test/automated test cases/` direc
 *   `test/server.test.js`: Covers the main backend API endpoints, such as fetching inventory data (`/api/inventory`) and handling exports (`/api/export/*`).
 *   `test/Scan.test.tsx`: Tests the frontend logic for the "Scan" screen, including mode toggling and barcode handling.
 *   `test/Header.test.tsx`: Tests the main `Header` component, ensuring navigation works correctly. -->
+mook is here

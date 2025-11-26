@@ -121,8 +121,21 @@ VALUES
     ((SELECT id FROM inventory_item WHERE item_id = 'SUP001'), 'SUP001', 'Gauze Pads 4x4', 'Check Out', 10, '2024-10-26 10:02:22', 'C12343', 'Nurse Jackie', 'Supplies'),
     
     -- Record 4: MED002 - Check In 2 units
-    ((SELECT id FROM inventory_item WHERE item_id = 'MED002'), 'MED002', 'Morphine 10mg', 'Check In', 2, '2024-10-26 14:06:05', 'C12342', 'Dr. Hart', 'Medication');
+    ((SELECT id FROM inventory_item WHERE item_id = 'MED002'), 'MED002', 'Morphine 10mg', 'Check In', 2, '2024-10-26 14:06:05', 'C12342', 'Dr. Hart', 'Medication'),
+    
+    -- Record 5: SUP001 - Transfer 5 units
+    ((SELECT id FROM inventory_item WHERE item_id = 'SUP001'), 'SUP001', 'Gauze Pads 4x4', 'Transfer', 5, '2025-11-20 10:15:00', 'C10001', 'Nurse Mook', 'Supplies'),
 
+    -- Record 6: SUP004 - Use 7 units
+    ((SELECT id FROM inventory_item WHERE item_id = 'SUP002'), 'SUP002', 'Medical Gloves (Box)', 'Use', 7, '2025-09-25 12:10:00', 'C10004', 'Dr. Mook', 'Supplies'),
+
+    -- Record 7: MED002 - Transfer 2 units
+	((SELECT id FROM inventory_item WHERE item_id = 'MED002'), 'MED002', 'Morphine 10mg', 'Transfer', 2, '2025-11-18 09:20:00', 'C20001', 'Dr. Hart', 'Medication'),
+
+   -- Record 8: MED003 - Use 5 units
+    ((SELECT id FROM inventory_item WHERE item_id = 'MED003'), 'MED003', 'Aspirin 325mg', 'Use', 5, '2025-11-19 15:40:00', 'C20002', 'Nurse Eak', 'Medication');
+    
+    
 -- Add one more action (e.g., a "Use" action) not in the mock to show the 'Use' action type:
 -- Test the system.
 -- INSERT INTO inventory_history
@@ -151,3 +164,6 @@ VALUES
     
 ALTER TABLE QMedicDB.notification_log
 ADD COLUMN details VARCHAR(255) NULL;
+
+
+select * from inventory_history;
