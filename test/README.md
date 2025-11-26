@@ -54,14 +54,16 @@ All test-related files are organized within the `test/` directory at the project
 
 ```
 test/
-├── automated test cases/ # Cypress E2E test files 
+├── automated test cases/  # Cypress E2E test files 
 │   ├── e2e/
-│   │   ├── History.cy.ts     # Tests for the History page 
-│   │   ├── Scan.cy.ts        # Tests for the Scan/Barcode page 
-│   │   ├── inventory.cy.ts   # Tests for Search and Filtering Inventory 
-│   │   └── spec.cy.ts        # Example Cypress 
+│   │   ├── inventory.cy.ts   # Test Suite 1: Inventory Search and Filtering
+│   │   ├── Scan.cy.ts        # Test Suite 2: Scan and Barcode Processing
+│   │   └── History.cy.ts     # Test Suite 3: History Log Interaction
 ├── manual test cases/    # Checklists for manual testing 
-│   └── manual_tests.md
+│   └── System test Search and Filtering.pdf
+│   └── System test Scan.pdf
+│   └── System test History page.pdf
+│   └── Requirement Traceability Matrix.pdf
 ├── inventory.test.js       # Jest unit tests 
 ├── Scan.test.tsx         # Jest unit tests 
 ├── history.test.js       # Jest unit tests
@@ -262,6 +264,12 @@ npx jest test/inventory.test.tsx
 ## Coverage Report 
 ![Coverage](https://github.com/user-attachments/assets/98b4aa8f-a439-45d0-ac90-5b3001223668)
 
+Coverage includes:
+* Scan feature (Scan.test.tsx)
+* Inventory search an filtering feature (inventoryFilters.js)
+* History feature (history.test.js)
+All tested components reached ≥ 70% statement coverage and ≥ 70% branch coverage.
+
 ---
 
 
@@ -311,8 +319,6 @@ Requirement Traceability Matrix.pdf
 
 Automated UI testing was implemented using Cypress to validate full end-to-end user flows in a browser environment. These tests confirm that critical workflows behave correctly when the frontend communicates with the backend.
 
----
-
 ### Test Execution
 
 #### Running E2E Tests Interactively
@@ -331,7 +337,6 @@ This mode executes all Cypress tests directly in the terminal, suitable for auto
 npm run test:e2e:run
 ```
 
----
 
 ### Browser Selection
 
@@ -340,7 +345,6 @@ When the Cypress Test Runner opens:
 1. Choose a preferred browser for executing E2E tests
 2. Select individual test specs to run or run all at once
 
----
 
 ### Automated UI Test Suite Location
 
@@ -358,9 +362,13 @@ test/
 │   ├── e2e/
 │   │   ├── inventory.cy.ts   # Test Suite 1: Inventory Search and Filtering
 │   │   ├── Scan.cy.ts        # Test Suite 2: Scan and Barcode Processing
-│   │   ├── History.cy.ts     # Test Suite 3: History Log Interaction
-│   │   └── spec.cy.ts        # Example Cypress file
+│   │   └── History.cy.ts     # Test Suite 3: History Log Interaction
 ```
+
+### Automated UI Testing result
+
+#### Test Suite 1 : Inventory search and filtering
+![InventoryUI_test](https://github.com/user-attachments/assets/b5e17ae2-cea5-407f-919f-5bbd340c1984)
 
 ---
 
