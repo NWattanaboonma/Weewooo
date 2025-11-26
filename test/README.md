@@ -1,16 +1,50 @@
-# Unit Testing Documentation
+# Weewooo
 
-This project uses [Jest](https://jestjs.io/) for unit and integration testing. The tests are located in the `test/` directory and cover both the frontend components (React Native) and the backend API (Node.js/Express).
+Weewooo is a full-stack application designed for simple inventory management. It features a mobile-friendly frontend built with React Native and a robust backend API powered by Node.js and Express.
 
-<!-- ## 1. Testing Stack
+Key features include:
+*   Scanning items to update inventory.
+*   Logging all inventory actions for a complete history.
+*   Exporting inventory data.
+
+This README provides details on how to run the unit and end-to-end tests for the project.
+
+---
+
+## Testing Documentation
+
+This document outlines the testing strategy for the Weewooo application, which includes automated unit, integration, and end-to-end (E2E) tests, as well as guidelines for manual testing.
+
+### Test Directory Structure
+
+All test-related files are organized within the `test/` directory at the project root.
+
+```
+test/
+├── automated test cases/  # Cypress E2E test files
+|   └── inventory.cy.ts
+├── manual test cases/     # Checklists for manual testing
+|   └── manual_tests.md
+├── Header.test.tsx        # Jest unit tests for React Native components
+├── Scan.test.tsx
+├── history.test.js        # Jest integration tests for the Node.js API
+└── server.test.js
+```
+
+## 1. Automated Testing
+
+Automated tests are critical for ensuring code quality and preventing regressions. We use Jest for unit/integration tests and Cypress for end-to-end tests.
+
+### 1.1. Testing Stack
 
 Our testing strategy relies on a few key libraries to ensure both backend and frontend code is reliable.
 
 *   **Jest:** A JavaScript testing framework that provides the test runner, assertion library, and powerful mocking capabilities. It's essential for isolating components and mocking dependencies like database connections.
 *   **Supertest:** An HTTP assertion library used to test the backend Express.js API endpoints without needing to start a live server. It allows us to make requests to our API and inspect the responses.
-*   **React Native Testing Library:** A library for testing React Native components in a way that resembles how users interact with them. It's used for testing our frontend screens and components. -->
+*   **React Native Testing Library:** A library for testing React Native components in a way that resembles how users interact with them. It's used for testing our frontend screens and components.
+*   **Cypress:** A next-generation front-end testing tool built for the modern web. We use it for E2E tests to simulate real user flows in a browser.
 
-## 2. Prerequisites
+### 1.2. Prerequisites
 
 Before running tests, ensure you have installed all the project dependencies, including the development dependencies needed for testing:
 
