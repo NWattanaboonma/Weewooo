@@ -21,14 +21,18 @@ All test-related files are organized within the `test/` directory at the project
 
 ```
 test/
-├── automated test cases/  # Cypress E2E test files
-|   └── inventory.cy.ts
-├── manual test cases/     # Checklists for manual testing
-|   └── manual_tests.md
-├── Header.test.tsx        # Jest unit tests for React Native components
-├── Scan.test.tsx
-├── history.test.js        # Jest integration tests for the Node.js API
-└── server.test.js
+├── automated test cases/ # Cypress E2E test files 
+│   ├── e2e/
+│   │   ├── History.cy.ts     # Tests for the History page 
+│   │   ├── Scan.cy.ts        # Tests for the Scan/Barcode page 
+│   │   ├── inventory.cy.ts   # Tests for Search and Filtering Inventory 
+│   │   └── spec.cy.ts        # Example Cypress 
+├── manual test cases/    # Checklists for manual testing 
+│   └── manual_tests.md
+├── Header.test.tsx       # Jest unit tests for React Native components 
+├── Scan.test.tsx         # Jest unit tests for React Native components 
+├── history.test.js       # Jest integration tests for the Node.js API 
+└── server.test.js        # Jest integration tests for the Node.js API
 ```
 
 ## 1. Automated Testing
