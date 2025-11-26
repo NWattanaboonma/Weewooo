@@ -1,15 +1,23 @@
 
-# Weewooo
+# Weewooo - Q Medic
 
-Weewooo is a full-stack application designed for simple inventory management. It features a mobile-friendly frontend built with React Native and a backend powered by Node.js and Express.
+Q-Medic is a mobile application designed to help paramedics efficiently manage medical inventory in real time. The system allows emergency staff to track item availability, monitor stock usage, check expiration dates, and update supplies across multiple ambulances or medical kits.
 
 ## Key Features
 
 * Scanning items to update inventory
 * Logging all inventory actions for complete history tracking
-* Exporting inventory data
-* Mobile-friendly interface
-* RESTful backend API
+* Data Export & Integration
+* Notification for tracking expiry stock
+* Real time inventory for different device
+
+## Team member
+1. 6588022 Sakhunich Iamcharas - Bam 
+2. 6588175 - Pakjira Kharpholdee - Bew
+3. 6588116-Nuttipong Wattanaboonma - Eak
+4. 6588169 Chananphimon Chunchaowarit - Pin
+5. 6588170-Peteingthanin Hajumpee- Aoey
+6. 6588174-Thitiwan Keattitat - Mook
 
 ---
 
@@ -369,6 +377,12 @@ test/
 
 #### Test Suite 1 : Inventory search and filtering
 ![InventoryUI_test](https://github.com/user-attachments/assets/b5e17ae2-cea5-407f-919f-5bbd340c1984)
+
+#### Test Suite 2 : Fast Scanning
+![ScanUI_test](https://github.com/user-attachments/assets/cf7005a6-ba1c-4dac-a6aa-074aee2047cf)
+
+#### Test Suite 2 : History and report
+![historyUI_test](https://github.com/user-attachments/assets/9a586a1a-02f7-46fa-bdca-04657a50d6dd)
 
 ---
 
