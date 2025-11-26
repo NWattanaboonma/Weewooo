@@ -31,8 +31,6 @@ describe('History Module - Base Choice Coverage (BCC) Tests', () => {
     });
 
     // --- Base Case ---
-    // F1: "Use" (Base) | F2: Item Exists (Base) | F3: Valid Qty (Base) 
-    // F4: No Low Stock (Base) | F5: DB OK (Base) | F6: All Params Provided (Base)
     it('BCC-01 (Base Case): Should succeed with all base choices', async () => {
         // Setup: Item exists with quantity 10, min_quantity is 2.
         mockConnection.query.mockResolvedValueOnce([[{ 
