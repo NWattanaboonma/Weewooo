@@ -262,7 +262,55 @@ npx jest test/inventory.test.tsx
 ## Coverage Report 
 
 
+---
+
+
+## 2. System Testing
+
+System Testing was performed to validate the application as a whole, ensuring that integrated components function correctly according to functional requirements. The testing approach follows manual execution based on structured test cases.
+
+### System Test Suites Provided
+
+All manual system test suites are included in the repository under:
+
+```
+/test/manual test cases/
 ```
 
+The folder contains the following documents:
+
+#### System Test Suite 1
+
+**File:**
+
+```
+System test Search and Filtering.pdf
+```
+
+#### System Test Suite 2
+
+**File:**
+
+```
+System test Scan test.pdf
+```
+
+#### System Test Suite 3
+
+**File:**
+
+```
+System test History page.pdf
+```
+
+### Requirement Traceability Matrix
+
+**File included in the same directory:**
+
+```
+Requirement Traceability Matrix.pdf
+```
 ---
+
+
 
