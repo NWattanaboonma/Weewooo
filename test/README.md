@@ -260,7 +260,7 @@ npx jest test/inventory.test.tsx
 ---
 
 ## Coverage Report 
-
+![Coverage](https://github.com/user-attachments/assets/98b4aa8f-a439-45d0-ac90-5b3001223668)
 
 ---
 
@@ -282,7 +282,6 @@ The folder contains the following documents:
 #### System Test Suite 1
 
 **File:**
-
 ```
 System test Search and Filtering.pdf
 ```
@@ -290,7 +289,6 @@ System test Search and Filtering.pdf
 #### System Test Suite 2
 
 **File:**
-
 ```
 System test Scan test.pdf
 ```
@@ -298,19 +296,72 @@ System test Scan test.pdf
 #### System Test Suite 3
 
 **File:**
-
 ```
 System test History page.pdf
 ```
 
 ### Requirement Traceability Matrix
-
-**File included in the same directory:**
-
+File included in the same directory:
 ```
 Requirement Traceability Matrix.pdf
 ```
 ---
 
+## 3. Automated UI Testing
+
+Automated UI testing was implemented using Cypress to validate full end-to-end user flows in a browser environment. These tests confirm that critical workflows behave correctly when the frontend communicates with the backend.
+
+---
+
+### Test Execution
+
+#### Running E2E Tests Interactively
+
+This mode opens the Cypress Test Runner interface for development and debugging.
+
+```
+npm run test:e2e
+```
+
+#### Running E2E Tests Headlessly
+
+This mode executes all Cypress tests directly in the terminal, suitable for automated pipelines.
+
+```
+npm run test:e2e:run
+```
+
+---
+
+### Browser Selection
+
+When the Cypress Test Runner opens:
+
+1. Choose a preferred browser for executing E2E tests
+2. Select individual test specs to run or run all at once
+
+---
+
+### Automated UI Test Suite Location
+
+All Cypress end-to-end test suites are located inside:
+
+```
+test/automated test cases/e2e/
+```
+
+Directory listing:
+
+```
+test/
+├── automated test cases/  # Cypress E2E test files 
+│   ├── e2e/
+│   │   ├── inventory.cy.ts   # Test Suite 1: Inventory Search and Filtering
+│   │   ├── Scan.cy.ts        # Test Suite 2: Scan and Barcode Processing
+│   │   ├── History.cy.ts     # Test Suite 3: History Log Interaction
+│   │   └── spec.cy.ts        # Example Cypress file
+```
+
+---
 
 
