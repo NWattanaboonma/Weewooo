@@ -87,7 +87,7 @@ export default function HistoryScreen() {
         <Text style={styles.detailText}>User: {item.user}</Text>
       </View>
       <View style={styles.cardFooter}>
-        <Text style={styles.dateText}>{item.date}</Text>
+        <Text style={styles.dateText} testID="date">{item.date}</Text>
       </View>
     </View>
   );
@@ -97,6 +97,7 @@ export default function HistoryScreen() {
     <TouchableOpacity
       key={item.id}
       style={styles.card}
+      testID="card"
       onPress={() => router.push(`/item-details?id=${item.itemId}`)}
     >
       <View style={styles.cardHeader}>
@@ -106,6 +107,7 @@ export default function HistoryScreen() {
             styles.actionBadge,
             (styles as any)[item.action.replace(" ", "")],
           ]}
+          testID="history-action"
         >
           {item.action}
         </Text>
@@ -116,7 +118,7 @@ export default function HistoryScreen() {
         <Text style={styles.detailText}>User: {item.user}</Text>
       </View>
       <View style={styles.cardFooter}>
-        <Text style={styles.dateText}>{item.date}</Text>
+        <Text style={styles.dateText} testID="history-date">{item.date}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -222,7 +224,7 @@ export default function HistoryScreen() {
                     setFilterCategory(categories[nextIndex]);
                   }}
                 >
-                  <Text style={styles.controlButtonText}>
+                  <Text style={styles.controlButtonText} testID="category">
                     Category: {filterCategory}
                   </Text>
                 </TouchableOpacity>
