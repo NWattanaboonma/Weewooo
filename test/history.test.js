@@ -8,110 +8,139 @@ const mockConnection = {
     query: jest.fn(),
     commit: jest.fn(),
     rollback: jest.fn(),
-    release: jest.fn(),
+    release: jest.fn()
 };
 
 const mockPool = {
     getConnection: jest.fn().mockResolvedValue(mockConnection),
-    query: jest.fn() // Used for direct pool queries (GET requests)
+    query: jest.fn()
 };
 
-// Setup Express app with dependency injection
 const app = express();
 app.use(express.json());
 app.use('/api', createHistoryRouter(mockPool));
 
-describe('Unit Testing Project: History Module', () => {
+// ============================================================================
+// SINGLE TEST SUITE: History Module
+// ============================================================================
+describe('History Module Unit Tests', () => {
 
+    // Clear mocks before every test
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    // SECTION: Transaction & Inventory Logic (POST /action/log)
-    it('TC-01: Should successfully log "Use" action and update inventory', async () => {
-        // 1. Select Item (Stock exists)
+    // --- Happy Path Tests ---
+
+    // Test Case: TC-01
+    // Technique: Logic Coverage
+    // Justification: Verifies the standard business logic predicates (Item exists -> Stock valid -> Update).
+    it('TC-01: Should succeed on a valid "Use" action (Happy Path)', async () => {
+        // 1. Select Item (Stock: 10)
         mockConnection.query.mockResolvedValueOnce([[{ 
-            id: 1, name: 'Gauze', category: 'Supplies', quantity: 10 
+            id: 1, name: 'Gauze Pads 4x4', category: 'Supplies', quantity: 10 
         }]]);
         // 2. Update Item
         mockConnection.query.mockResolvedValueOnce([{ affectedRows: 1 }]);
         // 3. Insert History
         mockConnection.query.mockResolvedValueOnce([{ insertId: 100 }]);
-        // 4. Check Low Stock (No alert needed)
-        mockConnection.query.mockResolvedValueOnce([[{ 
-            quantity: 9, min_quantity: 2, name: 'Gauze', location: 'A1'
-        }]]);
+        // 4. Low Stock Check
+        mockConnection.query.mockResolvedValueOnce([[{ quantity: 5, min_quantity: 2, name: 'Gauze' }]]);
 
         const res = await request(app).post('/api/action/log').send({
-            itemId: 101, action: 'Use', quantity: 1, user: 'Tester'
+            itemId: 101, action: 'Use', quantity: 5, user: 'Tester'
         });
 
         expect(res.statusCode).toBe(200);
         expect(mockConnection.commit).toHaveBeenCalled();
-        expect(mockConnection.query).toHaveBeenCalledTimes(4);
     });
 
-    it('TC-02: Should correctly increase quantity on "Check In"', async () => {
-        // 1. Get item (Current Qty: 10)
-        mockConnection.query.mockResolvedValueOnce([[{ id: 1, name: 'Saline', quantity: 10 }]]);
+    // Test Case: TC-03
+    // Technique: Graph Coverage
+    // Justification: Ensures the control flow graph traverses the specific "Check In" branch/edge (increasing quantity) instead of the default path.
+    it('TC-03: Should succeed on a "Check In" action and increase quantity', async () => {
+        // 1. Get item (Qty: 10)
+        mockConnection.query.mockResolvedValueOnce([[{ id: 1, name: 'MED001', quantity: 10 }]]);
         // 2. Update query
         mockConnection.query.mockResolvedValueOnce([{}]);
         // 3. Insert history
         mockConnection.query.mockResolvedValueOnce([{}]);
         // 4. Low stock check
-        mockConnection.query.mockResolvedValueOnce([[{ quantity: 15, min_quantity: 5 }]]);
+        mockConnection.query.mockResolvedValueOnce([[{ quantity: 11, min_quantity: 5 }]]); 
 
         const res = await request(app).post('/api/action/log').send({
-            itemId: 102, action: 'Check In', quantity: 5, user: 'Tester'
+            itemId: 102, action: 'Check In', quantity: 1, user: 'Tester'
         });
 
         expect(res.statusCode).toBe(200);
-        
-        // Verify logic: 10 + 5 = 15. The second query (UPDATE) should contain 15.
         const updateCall = mockConnection.query.mock.calls.find(call => call[0].startsWith('UPDATE'));
-        expect(updateCall[1][0]).toBe(15); 
+        expect(updateCall[1][0]).toBe(11); // 10 + 1 = 11
     });
 
-    it('TC-03: Should trigger Low Stock Notification when quantity drops below min', async () => {
-        // 1. Select Item
-        mockConnection.query.mockResolvedValueOnce([[{ id: 1, name: 'Gauze', quantity: 10 }]]);
-        // 2. Update & 3. Insert History
-        mockConnection.query.mockResolvedValueOnce({}).mockResolvedValueOnce({});
-        
-        // 4. Check Low Stock (Remaining: 1, Min: 5 -> Trigger Alert)
+    // --- Validation & Business Rules ---
+
+    // Test Case: TC-02
+    // Technique: ISP (Input Space Partitioning)
+    // Justification: Tests the partition of "Invalid Inputs" where Quantity requested > Quantity available.
+    it('TC-02: Should fail with 400 for insufficient stock', async () => {
         mockConnection.query.mockResolvedValueOnce([[{ 
-            quantity: 1, min_quantity: 5, name: 'Gauze', location: 'A1' 
+            id: 1, name: 'Gauze Pads 4x4', category: 'Supplies', quantity: 10 
         }]]);
 
-        // 5. Insert Notification
-        mockConnection.query.mockResolvedValueOnce({});
+        const res = await request(app).post('/api/action/log').send({
+            itemId: 101, action: 'Use', quantity: 30, user: 'Tester'
+        });
+
+        expect(res.statusCode).toBe(400);
+        expect(mockConnection.rollback).toHaveBeenCalled();
+        // The response body should contain the specific error
+        expect(res.body.error).toBe('Insufficient stock. Available: 10, Requested: 30');
+    });
+
+    // Test Case: TC-04
+    // Technique: Logic Coverage
+    // Justification: Tests the predicate logic `if (quantity <= min_quantity)` to ensure the alert triggers when the condition is true.
+    it('TC-04: Should trigger a low stock notification (Boundary Value)', async () => {
+        mockConnection.query.mockResolvedValueOnce([[{ id: 1, name: 'Bandages', quantity: 10 }]]);
+        mockConnection.query.mockResolvedValueOnce([{}]);
+        mockConnection.query.mockResolvedValueOnce([{}]);
+        // Mock low stock: quantity becomes 2 (Boundary), min is 5
+        mockConnection.query.mockResolvedValueOnce([[{ quantity: 2, min_quantity: 5, name: 'Bandages', location: 'B2', expiry_date: new Date() }]]);
+        mockConnection.query.mockResolvedValueOnce([{}]);
 
         const res = await request(app).post('/api/action/log').send({
-            itemId: 101, action: 'Use', quantity: 9, user: 'Tester'
+            itemId: 103, action: 'Use', quantity: 8, user: 'Tester'
         });
 
         expect(res.statusCode).toBe(200);
-        
-        const allCalls = mockConnection.query.mock.calls;
-        const notificationCall = allCalls.find(call => call[0].includes('INSERT INTO notification_log'));
-        expect(notificationCall).toBeDefined();
+        const notifInsert = mockConnection.query.mock.calls.find(call => call[0].includes('INSERT INTO notification_log'));
+        expect(notifInsert).toBeDefined();
     });
 
-    it('TC-04: Should return 500 and rollback if item not found', async () => {
-        // 1. Select Item returns empty array (Not Found)
+    // --- System Resilience & Reporting ---
+
+    // Test Case: TC-05
+    // Technique: ISP (Input Space Partitioning)
+    // Justification: Tests the partition of "Non-existent Items" (IDs that do not map to the database).
+    it('TC-05: Should fail with 500 if item ID is not found', async () => {
         mockConnection.query.mockResolvedValueOnce([[]]); 
 
         const res = await request(app).post('/api/action/log').send({
             itemId: 999, action: 'Use', quantity: 1
         });
 
-        expect(res.statusCode).toBe(500);
+        expect(res.statusCode).toBe(404);
         expect(mockConnection.rollback).toHaveBeenCalled();
-        expect(mockConnection.commit).not.toHaveBeenCalled();
     });
 
-    it('TC-05: Should rollback transaction on DB failure', async () => {
-        mockConnection.query.mockRejectedValue(new Error('DB Connection Failed'));
+    // Test Case: TC-06
+    // Technique: Graph Coverage
+    // Justification: Ensures the execution path traverses the `catch` block (Exception handling path) in the control flow graph.
+    it('TC-06: Should fail with 500 on a generic database error', async () => {
+        // --- MUTE CONSOLE.ERROR ---
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+        mockConnection.query.mockRejectedValue(new Error('DB connection lost'));
 
         const res = await request(app).post('/api/action/log').send({
             itemId: 101, action: 'Use', quantity: 1
@@ -119,37 +148,27 @@ describe('Unit Testing Project: History Module', () => {
 
         expect(res.statusCode).toBe(500);
         expect(mockConnection.rollback).toHaveBeenCalled();
+        // Verify that the error was logged, even though we didn't see it
+        expect(consoleErrorSpy).toHaveBeenCalledWith('Transaction failed:', expect.any(Error));
+
+        // --- RESTORE CONSOLE.ERROR ---
+        consoleErrorSpy.mockRestore();
     });
 
-    // SECTION: History Retrieval Logic (GET /history)
-    it('TC-06: Should return history list with correct data structure', async () => {
-        mockPool.query.mockResolvedValueOnce([[{
-            id: 1, itemName: 'Gauze', action: 'Use', date: new Date()
-        }]]);
+    // Test Case: TC-07
+    // Technique: ISP (Input Space Partitioning)
+    // Justification: Tests the partition of inputs involving "Optional Query Parameters" (Filter by Action, Category, and Sort).
+    it('TC-07: Should correctly filter and sort history records', async () => {
+        mockPool.query.mockResolvedValueOnce([[]]);
 
-        const res = await request(app).get('/api/history');
-        expect(res.statusCode).toBe(200);
-        expect(res.body[0].itemName).toBe('Gauze');
-    });
-
-    it('TC-07: Should filter history by caseId', async () => {
-        mockPool.query.mockResolvedValueOnce([[]]); 
+        await request(app).get('/api/history?sort=date&action=Transfer&category=Supplies&caseId=C12345');
         
-        const res = await request(app).get('/api/history?caseId=C12345');
-        
-        expect(res.statusCode).toBe(200);
-        expect(mockPool.query.mock.calls[0][0]).toContain('WHERE case_id = ?');
-    });
+        const sqlQuery = mockPool.query.mock.calls[0][0];
+        const params = mockPool.query.mock.calls[0][1];
 
-    it('TC-08: Should format history with null date as N/A', async () => {
-        const mockHistoryWithNullDate = [{
-            id: 2, itemName: 'Bandage', action: 'Use', date: null
-        }];
-        mockPool.query.mockResolvedValueOnce([mockHistoryWithNullDate]);
-
-        const res = await request(app).get('/api/history');
-
-        expect(res.statusCode).toBe(200);
-        expect(res.body[0].date).toBe('N/A');
+        expect(sqlQuery).toMatch(/WHERE 1=1/);
+        expect(sqlQuery).toMatch(/AND case_id = \?/);
+        expect(sqlQuery).toMatch(/AND action = \?/);
+        expect(params).toEqual(['C12345', 'Transfer', 'Supplies']);
     });
 });

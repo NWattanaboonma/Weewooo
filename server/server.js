@@ -22,7 +22,7 @@ const PORT = 3000;
 
 // MySQL connection pool configuration
 const pool = mysql.createPool({
-    host: '198.168.1.71',
+    host: 'localhost',
     user: 'root',
     password: 'paramedic1234',
     database: 'QMedicDB'
