@@ -6,9 +6,6 @@
  * @testingStrategy Pair-Wise Coverage (PWC) - 20 Tests
  */
 
-// ============================================
-// REAL DATABASE DATA
-// ============================================
 const realDatabaseItems = [
   // MED001: Ambulance 1, Expires 2025-09-29 (Expired)
   {
@@ -96,15 +93,10 @@ const realDatabaseItems = [
   },
 ];
 
-// ============================================
-// IMPORT FILTER FUNCTION
-// ============================================
 const { filterInventoryItems } = require('@/app/utils/inventoryFilters');
 
-// ============================================
-// UNIT TESTS - 20 PWC TEST CASES
+
 // Test Requirements: PWC = 5 × 4 = 20 tests
-// ============================================
 describe('Search and Filter - Pair-Wise Coverage (20 Tests)', () => {
 
   // T1: "", All Categories, Not select, Not select -> All 7 items
