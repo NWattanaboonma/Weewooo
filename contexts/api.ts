@@ -1,4 +1,5 @@
 /**
+<<<<<<< HEAD
     * Centralized API configuration.
     *
     * IMPORTANT: Update this IP address to match the machine running your backend server.
@@ -8,3 +9,14 @@
     *   Example: 'http://192.168.1.47:3000/api'
     */
    export const API_BASE_URL = 'http://192.168.1.54:3000/api'; // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js
+=======
+ * Centralized API configuration.
+ *
+ * IMPORTANT: Update this IP address to match the machine running your backend server.
+ *
+ * - For local development with an emulator/simulator on the same machine, you can use 'http://localhost:3000/api' or 'http://127.0.0.1:3000/api'.
+ * - For testing on a physical device on the same Wi-Fi network, use your computer's local network IP address.
+ *   Example: 'http://192.168.1.47:3000/api'
+ */
+export const API_BASE_URL = 'http://10.62.94.21:3000/api'; // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 This is auto-updated by server.js // <-- 🛑 UPDATE THIS IP ADDRESS // <-- 🛑 UPDATE THIS IP ADDRESS 
+>>>>>>> b76d5bb56675ec2933853865f8c14a89e66c172b

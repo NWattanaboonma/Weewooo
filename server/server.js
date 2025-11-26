@@ -12,6 +12,9 @@ const { Parser } = require('json2csv');
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 
+// --- NEW --- Import the router for history
+const createHistoryRouter = require('./history');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -19,11 +22,20 @@ app.use(express.json());
 const PORT = 3000;
 
 const pool = mysql.createPool({
+<<<<<<< HEAD
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME
+=======
+    host: 'localhost',
+    user: 'root',
+    password: 'Manow_wan@1234',
+    database: 'QMedicDB'
+>>>>>>> b76d5bb56675ec2933853865f8c14a89e66c172b
 });
+
+const fetch = require('node-fetch'); // EmailJS API
 
 // Utility function to safely format Date objects received from MySQL
 const formatDateForFrontend = (date) => {
@@ -108,132 +120,53 @@ app.get('/api/inventory', async (req, res) => {
 });
 
 /**
- * POST /api/action/log
- * Logs an inventory action (Check In, Check Out, Use, etc.) and updates item quantity.
- */
-app.post('/api/action/log', async (req, res) => {
-    const { itemId, action, quantity, caseId = `C${Math.floor(Math.random() * 90000) + 10000}`, user = 'Current User' } = req.body;
-
-    const connection = await pool.getConnection();
-
-    try {
-        await connection.beginTransaction();
-
-        // 1. Get Item Data and its minimum quantity threshold
-        const [items] = await connection.query('SELECT id, name, category, quantity FROM inventory_item WHERE item_id = ?', [itemId]);
-        if (items.length === 0) throw new Error(`Item ID ${itemId} not found.`);
-        const item = items[0];
-        
-        // 2. Calculate New Quantity
-        let updatedQuantity = item.quantity;
-        const actionsThatReduceStock = ["Use", "Check Out", "Remove All"];
-
-        if (action === 'Check In') {
-            updatedQuantity += quantity;
-        } else if (actionsThatReduceStock.includes(action)) {
-            updatedQuantity -= quantity;
-        }
-        
-        updatedQuantity = Math.max(0, updatedQuantity); 
-
-        // 3. Update inventory_item
-        await connection.query('UPDATE inventory_item SET quantity = ?, last_scanned = NOW() WHERE id = ?', [updatedQuantity, item.id]);
-
-        // 4. Insert into inventory_history
-        const historyQuery = `
-            INSERT INTO inventory_history 
-            (item_fk, item_id, item_name, action, quantity, action_date, case_id, user, category)
-            VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?);
-        `;
-        await connection.query(historyQuery, [
-            item.id, itemId, item.name, action, quantity, caseId, user, item.category
-        ]);
-
-        // 5. Check for Low Stock and Send Notification
-        const [itemDetails] = await connection.query('SELECT quantity, min_quantity, name, location, expiry_date FROM inventory_item WHERE id = ?', [item.id]);
-        const updatedItem = itemDetails[0];
-        const minQty = updatedItem.min_quantity;
-        const actionsThatTriggerAlert = ["Use", "Check Out", "Remove All"];
-
-        if (updatedItem.quantity <= minQty && actionsThatTriggerAlert.includes(action)) {
-            const insertNotifQuery = `
-                INSERT INTO notification_log 
-                    (item_fk, alert_type, item_id_at_alert, item_name, location, expiry_date_at_alert, details)
-                VALUES (?, 'Low Stock', ?, ?, ?, ?, ?);
-            `;
-            await connection.query(insertNotifQuery, [
-                item.id,
-                itemId,
-                updatedItem.name,
-                updatedItem.location,
-                updatedItem.expiry_date,
-                `Quantity is ${updatedItem.quantity}, which is at or below the minimum of ${minQty}.`
-            ]);
-
-            console.log(`✅ Low stock notification logged for item ${itemId}.`);
-
-            // Send low stock email alert
-            // await sendEmailJS({
-            //     service_id: 'service_o9baz0e',
-            //     template_id: 'template_k05so3m',
-            //     user_id: 'KetRjtX41DqNLAL84',
-            //     accessToken: 'zAQUIbBQ4tu2YQdgBCbCJ',
-            //     template_params: {
-            //         title: `Low Stock Alert: ${updatedItem.name} (${itemId})`,
-            //         name: 'Q-Medic Bot',
-            //         time: new Date().toLocaleString(),
-            //         item: updatedItem.name,
-            //         item_id: itemId,
-            //         category: updatedItem.category,
-            //         location: updatedItem.location,
-            //         quantity: updatedItem.quantity,
-            //         expiry_date: formatDateForFrontend(updatedItem.expiry_date),
-            //         daysLeft: 'N/A' 
-            //     }
-            // });
-        }
-
-        await connection.commit();
-        res.status(200).send({ message: 'Action logged and inventory updated.', newQuantity: updatedQuantity });
-
-    } catch (error) {
-        await connection.rollback();
-        console.error('Transaction failed:', error);
-        res.status(500).send({ error: 'Failed to complete inventory transaction.' });
-    } finally {
-        connection.release();
-    }
-});
-
-/**
  * GET /api/history
- * Fetches all transaction records.
+ * Fetches inventory history with filtering and sorting.
  */
 app.get('/api/history', async (req, res) => {
-    try {
-        const query = `
-            SELECT id, item_id as itemId, item_name as itemName, 
-                   action_date as date, case_id as caseId, user, quantity, 
-                   category, action
-            FROM inventory_history
-            ORDER BY action_date DESC;
-        `;
-        const [rows] = await pool.query(query);
-        
-        const history = rows.map(row => ({
-            ...row,
-            date: row.date ? new Date(row.date).toLocaleString('en-US', {
-                month: '2-digit', day: '2-digit', year: 'numeric',
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
-            }) : 'N/A'
-        }));
+        // --- FIX: Re-add filtering and sorting parameters ---
+        const { caseId, action, category, sort } = req.query;
+        try {
+            let query = `
+                SELECT id, item_id as itemId, item_name as itemName, 
+                       action_date as date, case_id as caseId, user, quantity, 
+                       category, action
+                FROM inventory_history
+                WHERE 1=1
+            `;
+            const params = [];
 
-        res.json(history);
-    } catch (error) {
-        console.error('Error fetching history:', error);
-        res.status(500).send({ message: 'Failed to fetch history data.' });
-    }
-});
+            // --- FIX: Add logic to build the query dynamically ---
+            if (caseId) {
+                query += ' AND case_id = ?';
+                params.push(caseId);
+            }
+            if (action) {
+                query += ' AND action = ?';
+                params.push(action);
+            }
+            if (category) {
+                query += ' AND category = ?';
+                params.push(category);
+            }
+            if (sort === 'date') {
+                query += ' ORDER BY action_date DESC';
+            } else {
+                query += ' ORDER BY action_date DESC'; // Default sort
+            }
+
+            const [rows] = await pool.query(query, params);
+            const history = rows.map(row => ({ ...row, date: row.date ? new Date(row.date).toLocaleString('en-US') : 'N/A' }));
+            res.json(history);
+        } catch (error) {
+            console.error('Error fetching history:', error);
+            res.status(500).send({ message: 'Failed to fetch history data.' });
+        }
+    });
+
+// --- NEW --- Create and use the history router for POST /action/log
+const historyRouter = createHistoryRouter(pool);
+app.use('/api', historyRouter);
 
 /**
  * GET /api/notifications
@@ -276,7 +209,6 @@ app.post('/api/notifications/read/:id', async (req, res) => {
         res.status(500).send({ message: 'Failed to update notification status.' });
     }
 });
-
 
 // --- NEW --- Export Routes (with Logging)
 // =============================================
@@ -584,42 +516,48 @@ app.get('/api/export/history', async (req, res) => {
 
 
 // --- Start Server ---
-app.listen(PORT, '0.0.0.0', async () => {
-    console.log(`\n🚀 Server running on port ${PORT}`);
+// Only start listening if the file is run directly (not when imported by a test)
+if (require.main === module) {
+    app.listen(PORT, '0.0.0.0', async () => {
+        console.log(`\n🚀 Server running on port ${PORT}`);
 
-    const { networkInterfaces } = require('os');
-    const nets = networkInterfaces();
-    let localIp = 'localhost';
+        const { networkInterfaces } = require('os');
+        const nets = networkInterfaces();
+        let localIp = 'localhost';
 
-    const preferredInterfaces = ['Wi-Fi', 'Ethernet', 'en0', 'wlan0'];
-    for (const name of preferredInterfaces) {
-        if (nets[name]) {
-            const interfaceDetails = nets[name].find(
-                net => net.family === 'IPv4' && !net.internal
-            );
-            if (interfaceDetails) {
-                localIp = interfaceDetails.address;
-                break;
+        const preferredInterfaces = ['Wi-Fi', 'Ethernet', 'en0', 'wlan0'];
+        for (const name of preferredInterfaces) {
+            if (nets[name]) {
+                const interfaceDetails = nets[name].find(
+                    net => net.family === 'IPv4' && !net.internal
+                );
+                if (interfaceDetails) {
+                    localIp = interfaceDetails.address;
+                    break;
+                }
             }
         }
-    }
 
-    console.log(`\n✅ Server is accessible on your network at: http://${localIp}:${PORT}`);
+        console.log(`\n✅ Server is accessible on your network at: http://${localIp}:${PORT}`);
 
-    try {
-        const apiTsPath = path.join(__dirname, '..', 'contexts', 'api.ts');
-        const newApiUrlLine = `export const API_BASE_URL = 'http://${localIp}:${PORT}/api'; // <-- 🛑 This is auto-updated by server.js`;
+        try {
+            const apiTsPath = path.join(__dirname, '..', 'contexts', 'api.ts');
+            const newApiUrlLine = `export const API_BASE_URL = 'http://${localIp}:${PORT}/api'; // <-- 🛑 This is auto-updated by server.js`;
 
-        let fileContent = await fs.readFile(apiTsPath, 'utf-8');
-        
-        const updatedContent = fileContent.replace(
-            /export const API_BASE_URL = '.*';/, 
-            newApiUrlLine
-        );
+            let fileContent = await fs.readFile(apiTsPath, 'utf-8');
+            
+            const updatedContent = fileContent.replace(
+                /export const API_BASE_URL = '.*';/, 
+                newApiUrlLine
+            );
 
-        await fs.writeFile(apiTsPath, updatedContent, 'utf-8');
-        console.log('✅ Automatically updated contexts/api.ts with the correct IP address.');
-    } catch (error) {
-        console.error('❌ Failed to auto-update contexts/api.ts. Please update it manually.', error);
-    }
-});
+            await fs.writeFile(apiTsPath, updatedContent, 'utf-8');
+            console.log('✅ Automatically updated contexts/api.ts with the correct IP address.');
+        } catch (error) {
+            console.error('❌ Failed to auto-update contexts/api.ts. Please update it manually.', error);
+        }
+    });
+}
+
+// Export for testing purposes
+module.exports = { app, pool };

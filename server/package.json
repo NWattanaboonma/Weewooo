@@ -2,10 +2,13 @@
   "name": "server",
   "version": "1.0.0",
   "main": "index.js",
+<<<<<<< HEAD
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
+=======
+>>>>>>> b76d5bb56675ec2933853865f8c14a89e66c172b
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -20,5 +23,12 @@
     "mysql2": "^3.15.3",
     "node-cron": "^4.2.1",
     "pdfkit": "^0.17.2"
+  },
+  "scripts": {
+    "test": "jest --config=../jest.config.js"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.1.4"
   }
 }

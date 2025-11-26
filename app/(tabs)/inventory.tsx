@@ -168,14 +168,19 @@ export default function InventoryScreen() {
     });
 
   const getQuantityForUse = (itemId: string): number => {
-    const q = parseInt(quantitiesToUse[itemId] || "1", 10);
-    return isNaN(q) || q < 1 ? 1 : q;
+    const value = quantitiesToUse[itemId];
+    // If the input is empty or undefined, default to 1.
+    if (value === "" || value === undefined) {
+      return 1;
+    }
+    const q = parseInt(value, 10);
+    return isNaN(q) || q < 0 ? 0 : q; // Otherwise, respect the entered value, including 0.
   };
 
   const handleQuantityChange = (itemId: string, value: string) => {
     setQuantitiesToUse((prev) => ({
       ...prev,
-      [itemId]: value.replace(/[^1-9]/g, ""),
+      [itemId]: value.replace(/[^0-9]/g, ""),
     }));
   };
 
@@ -496,11 +501,12 @@ export default function InventoryScreen() {
                       style={[
                         styles.actionButton,
                         styles.useButton,
-                        (item.quantity < getQuantityForUse(item.id) ||
-                          item.quantity <= 0) &&
-                          styles.disabledButton,
+                        (getQuantityForUse(item.id) <= 0 ||
+                          item.quantity < getQuantityForUse(item.id)) &&
+                          styles.disabledButton
                       ]}
                       onPress={() =>
+                        getQuantityForUse(item.id) > 0 &&
                         logInventoryAction(
                           item.id,
                           "Use",
@@ -508,6 +514,7 @@ export default function InventoryScreen() {
                         )
                       }
                       disabled={
+                        getQuantityForUse(item.id) <= 0 ||
                         item.quantity < getQuantityForUse(item.id) ||
                         item.quantity <= 0
                       }
@@ -518,11 +525,12 @@ export default function InventoryScreen() {
                       style={[
                         styles.actionButton,
                         styles.transferButton,
-                        (item.quantity < getQuantityForUse(item.id) ||
-                          item.quantity <= 0) &&
-                          styles.disabledButton,
+                        (getQuantityForUse(item.id) <= 0 ||
+                          item.quantity < getQuantityForUse(item.id)) &&
+                          styles.disabledButton
                       ]}
                       onPress={() =>
+                        getQuantityForUse(item.id) > 0 &&
                         logInventoryAction(
                           item.id,
                           "Transfer",
@@ -530,6 +538,7 @@ export default function InventoryScreen() {
                         )
                       }
                       disabled={
+                        getQuantityForUse(item.id) <= 0 ||
                         item.quantity < getQuantityForUse(item.id) ||
                         item.quantity <= 0
                       }
