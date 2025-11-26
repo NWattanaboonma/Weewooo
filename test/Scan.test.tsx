@@ -259,7 +259,7 @@ describe("ScanScreen - Core Logic (processScannedCode) using ISP", () => {
   });
 });
 
-// --- TEST SUITE 2: handleBarcodeScan()
+// TEST SUITE 2: handleBarcodeScan()
 
 describe("ScanScreen - handleBarcodeScan Logic (Debounce ISP)", () => {
   let mockLogInventoryAction: jest.Mock;
@@ -360,6 +360,6 @@ describe("ScanScreen - handleBarcodeScan Logic (Debounce ISP)", () => {
     (global.alert as jest.Mock).mockClear();
     act(() => fireCameraScanTest(VALID_CODE_IN_STOCK));
 
-    expect(mockLogInventoryAction).not.toHaveBeenCalled(); // Should be skipped
+    expect(mockLogInventoryAction).not.toHaveBeenCalled();
   });
 });
