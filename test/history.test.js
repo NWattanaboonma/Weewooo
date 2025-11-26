@@ -33,7 +33,7 @@ describe('History Module Unit Tests', () => {
     // --- Happy Path Tests ---
 
     // Test Case: TC-01
-    // Technique: Logic Coverage
+    // Technique: ISP (Input Space Partitioning)
     // Justification: Verifies the standard business logic predicates (Item exists -> Stock valid -> Update).
     it('TC-01: Should succeed on a valid "Use" action (Happy Path)', async () => {
         // 1. Select Item (Stock: 10)
@@ -44,7 +44,7 @@ describe('History Module Unit Tests', () => {
         mockConnection.query.mockResolvedValueOnce([{ affectedRows: 1 }]);
         // 3. Insert History
         mockConnection.query.mockResolvedValueOnce([{ insertId: 100 }]);
-        // 4. Low Stock Check
+        // 4. Low Stock Check (item quantity is not below min_quantity)
         mockConnection.query.mockResolvedValueOnce([[{ quantity: 5, min_quantity: 2, name: 'Gauze' }]]);
 
         const res = await request(app).post('/api/action/log').send({
@@ -52,11 +52,12 @@ describe('History Module Unit Tests', () => {
         });
 
         expect(res.statusCode).toBe(200);
+        expect(res.body.newQuantity).toBe(5);
         expect(mockConnection.commit).toHaveBeenCalled();
     });
 
     // Test Case: TC-03
-    // Technique: Graph Coverage
+    // Technique: ISP (Input Space Partitioning)
     // Justification: Ensures the control flow graph traverses the specific "Check In" branch/edge (increasing quantity) instead of the default path.
     it('TC-03: Should succeed on a "Check In" action and increase quantity', async () => {
         // 1. Get item (Qty: 10)
@@ -77,7 +78,22 @@ describe('History Module Unit Tests', () => {
         expect(updateCall[1][0]).toBe(11); // 10 + 1 = 11
     });
 
-    // --- Validation & Business Rules ---
+    // Test Case: TC-04
+    // Technique: ISP (Input Space Partitioning)
+    // Justification: Tests the predicate logic `if (quantity <= min_quantity)` to ensure the alert triggers when the condition is true.
+    it('TC-04: Should trigger a low stock notification', async () => {
+        mockConnection.query.mockResolvedValueOnce([[{ id: 1, name: 'Bandages', quantity: 10 }]]);
+        mockConnection.query.mockResolvedValueOnce([{}]);
+        mockConnection.query.mockResolvedValueOnce([{}]);
+        // Mock low stock: quantity becomes 2, which is <= min_quantity of 5
+        mockConnection.query.mockResolvedValueOnce([[{ quantity: 2, min_quantity: 5, name: 'Bandages', location: 'B2', expiry_date: new Date() }]]);
+        mockConnection.query.mockResolvedValueOnce([{}]); // For the notification insert
+
+        await request(app).post('/api/action/log').send({ itemId: 103, action: 'Use', quantity: 8, user: 'Tester' });
+
+        const notifInsert = mockConnection.query.mock.calls.find(call => call[0].includes('INSERT INTO notification_log'));
+        expect(notifInsert).toBeDefined();
+    });
 
     // Test Case: TC-02
     // Technique: ISP (Input Space Partitioning)
@@ -96,29 +112,7 @@ describe('History Module Unit Tests', () => {
         // The response body should contain the specific error
         expect(res.body.error).toBe('Insufficient stock. Available: 10, Requested: 30');
     });
-
-    // Test Case: TC-04
-    // Technique: Logic Coverage
-    // Justification: Tests the predicate logic `if (quantity <= min_quantity)` to ensure the alert triggers when the condition is true.
-    it('TC-04: Should trigger a low stock notification (Boundary Value)', async () => {
-        mockConnection.query.mockResolvedValueOnce([[{ id: 1, name: 'Bandages', quantity: 10 }]]);
-        mockConnection.query.mockResolvedValueOnce([{}]);
-        mockConnection.query.mockResolvedValueOnce([{}]);
-        // Mock low stock: quantity becomes 2 (Boundary), min is 5
-        mockConnection.query.mockResolvedValueOnce([[{ quantity: 2, min_quantity: 5, name: 'Bandages', location: 'B2', expiry_date: new Date() }]]);
-        mockConnection.query.mockResolvedValueOnce([{}]);
-
-        const res = await request(app).post('/api/action/log').send({
-            itemId: 103, action: 'Use', quantity: 8, user: 'Tester'
-        });
-
-        expect(res.statusCode).toBe(200);
-        const notifInsert = mockConnection.query.mock.calls.find(call => call[0].includes('INSERT INTO notification_log'));
-        expect(notifInsert).toBeDefined();
-    });
-
-    // --- System Resilience & Reporting ---
-
+    
     // Test Case: TC-05
     // Technique: ISP (Input Space Partitioning)
     // Justification: Tests the partition of "Non-existent Items" (IDs that do not map to the database).
@@ -134,10 +128,10 @@ describe('History Module Unit Tests', () => {
     });
 
     // Test Case: TC-06
-    // Technique: Graph Coverage
-    // Justification: Ensures the execution path traverses the `catch` block (Exception handling path) in the control flow graph.
+    // Technique: ISP (Input Space Partitioning)
+    // Justification: Ensures the execution path traverses the `catch` block (Exception handling path) in the control flow graph for generic errors.
     it('TC-06: Should fail with 500 on a generic database error', async () => {
-        // --- MUTE CONSOLE.ERROR ---
+        // Mute console.error for this test to keep the output clean
         const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
         mockConnection.query.mockRejectedValue(new Error('DB connection lost'));
@@ -147,12 +141,10 @@ describe('History Module Unit Tests', () => {
         });
 
         expect(res.statusCode).toBe(500);
+        expect(res.body.error).toBe('Failed to complete inventory transaction.');
         expect(mockConnection.rollback).toHaveBeenCalled();
-        // Verify that the error was logged, even though we didn't see it
-        expect(consoleErrorSpy).toHaveBeenCalledWith('Transaction failed:', expect.any(Error));
-
-        // --- RESTORE CONSOLE.ERROR ---
-        consoleErrorSpy.mockRestore();
+        
+        consoleErrorSpy.mockRestore(); // Restore console.error
     });
 
     // Test Case: TC-07

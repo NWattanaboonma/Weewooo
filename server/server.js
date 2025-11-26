@@ -24,7 +24,7 @@ const PORT = 3000;
 const pool = mysql.createPool({
     host: 'localhost',
     user: 'root',
-    password: 'paramedic1234',
+    password: 'Manow_wan@1234',
     database: 'QMedicDB'
 });
 
