@@ -89,47 +89,6 @@ function createHistoryRouter(pool) {
         }
     });
 
-    router.get('/history', async (req, res) => {
-        // --- FIX: Re-add filtering and sorting parameters ---
-        const { caseId, action, category, sort } = req.query;
-        try {
-            let query = `
-                SELECT id, item_id as itemId, item_name as itemName, 
-                       action_date as date, case_id as caseId, user, quantity, 
-                       category, action
-                FROM inventory_history
-                WHERE 1=1
-            `;
-            const params = [];
-
-            // --- FIX: Add logic to build the query dynamically ---
-            if (caseId) {
-                query += ' AND case_id = ?';
-                params.push(caseId);
-            }
-            if (action) {
-                query += ' AND action = ?';
-                params.push(action);
-            }
-            if (category) {
-                query += ' AND category = ?';
-                params.push(category);
-            }
-            if (sort === 'date') {
-                query += ' ORDER BY action_date DESC';
-            } else {
-                query += ' ORDER BY action_date DESC'; // Default sort
-            }
-
-            const [rows] = await pool.query(query, params);
-            const history = rows.map(row => ({ ...row, date: row.date ? new Date(row.date).toLocaleString('en-US') : 'N/A' }));
-            res.json(history);
-        } catch (error) {
-            console.error('Error fetching history:', error);
-            res.status(500).send({ message: 'Failed to fetch history data.' });
-        }
-    });
-
     return router;
 }
 
